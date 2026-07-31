@@ -1,5 +1,5 @@
 import type { Migration } from "./types";
-export const mitigation001Initial: Migration = {
+export const migration001Initial: Migration = {
     id : 1,
     name : "initial schema",
     up: async (db)=>{
