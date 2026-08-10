@@ -2,7 +2,9 @@ import type { SQLiteDatabase } from "expo-sqlite";
 import { getDatabase } from "@/db/client";
 import { runMigrations } from "@/db/migrationRunner";
 import { migrations } from "@/db/migrations";
-
+import type { ICategoryRepository } from "@/features/categories/repositories/ICategoryRepository";
+import { SqliteCategoryRepository } from "@/features/categories/repositories/SqliteCategoryRepository";
+import { CategoryService } from "@/features/categories/services/CategoryService";
 /**
  * The single composition root of the app.
  *
@@ -22,6 +24,9 @@ import { migrations } from "@/db/migrations";
  */
 export interface AppContainer {
   db: SQLiteDatabase;
+
+  categoryRepository: ICategoryRepository;
+  categoryService: CategoryService;
 }
 
 let containerInstance: AppContainer | null = null;
@@ -30,7 +35,13 @@ export async function buildContainer(): Promise<AppContainer> {
   const db = await getDatabase();
   await runMigrations(db, migrations);
 
-  containerInstance = { db };
+  const categoryRepository = new SqliteCategoryRepository(db);
+
+  containerInstance = { 
+    db,
+    categoryRepository,
+    categoryService: new CategoryService(categoryRepository),
+   };
   return containerInstance;
 }
 
