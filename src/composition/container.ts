@@ -5,6 +5,9 @@ import { migrations } from "@/db/migrations";
 import type { ICategoryRepository } from "@/features/categories/repositories/ICategoryRepository";
 import { SqliteCategoryRepository } from "@/features/categories/repositories/SqliteCategoryRepository";
 import { CategoryService } from "@/features/categories/services/CategoryService";
+import type { IAccountRepository } from "@/features/accounts/repositories/IAccountRepository";
+import { SqliteAccountRepository } from "@/features/accounts/repositories/SqliteAccountRepository";
+import { AccountService } from "@/features/accounts/services/AccountService";
 /**
  * The single composition root of the app.
  *
@@ -24,7 +27,8 @@ import { CategoryService } from "@/features/categories/services/CategoryService"
  */
 export interface AppContainer {
   db: SQLiteDatabase;
-
+  accountRepository: IAccountRepository;
+  accountService: AccountService;
   categoryRepository: ICategoryRepository;
   categoryService: CategoryService;
 }
@@ -35,10 +39,13 @@ export async function buildContainer(): Promise<AppContainer> {
   const db = await getDatabase();
   await runMigrations(db, migrations);
 
+  const accountRepository = new SqliteAccountRepository(db);
   const categoryRepository = new SqliteCategoryRepository(db);
 
   containerInstance = { 
     db,
+    accountRepository,
+    accountService: new AccountService(accountRepository),
     categoryRepository,
     categoryService: new CategoryService(categoryRepository),
    };
