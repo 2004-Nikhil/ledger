@@ -8,6 +8,9 @@ import { CategoryService } from "@/features/categories/services/CategoryService"
 import type { IAccountRepository } from "@/features/accounts/repositories/IAccountRepository";
 import { SqliteAccountRepository } from "@/features/accounts/repositories/SqliteAccountRepository";
 import { AccountService } from "@/features/accounts/services/AccountService";
+import type { ITransactionRepository } from "@/features/transactions/repositories/ITransactionRepository";
+import { SqliteTransactionRepository } from "@/features/transactions/repositories/SqliteTransactionRepository";
+import { TransactionService } from "@/features/transactions/services/TransactionService";
 /**
  * The single composition root of the app.
  *
@@ -31,6 +34,8 @@ export interface AppContainer {
   accountService: AccountService;
   categoryRepository: ICategoryRepository;
   categoryService: CategoryService;
+  transactionRepository: ITransactionRepository;
+  transactionService: TransactionService;
 }
 
 let containerInstance: AppContainer | null = null;
@@ -41,13 +46,15 @@ export async function buildContainer(): Promise<AppContainer> {
 
   const accountRepository = new SqliteAccountRepository(db);
   const categoryRepository = new SqliteCategoryRepository(db);
-
+  const transactionRepository = new SqliteTransactionRepository(db);
   containerInstance = { 
     db,
     accountRepository,
     accountService: new AccountService(accountRepository),
     categoryRepository,
     categoryService: new CategoryService(categoryRepository),
+    transactionRepository,
+    transactionService: new TransactionService(db, transactionRepository, accountRepository),
    };
   return containerInstance;
 }
