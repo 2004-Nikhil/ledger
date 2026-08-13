@@ -1,26 +1,61 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useAppContainer } from "@/composition/AppProvider";
+import { useAccounts } from "@/features/accounts/hooks/useAccounts";
+import { useTransactions } from "@/features/transactions/hooks/useTransactions";
+import { summarizeCurrentMonth } from "@//utils/monthlySummary";
+import { formatCurrency } from "@/utils/currency";
 
 export default function DashboardScreen() {
-  // Just reading `db` off the container proves it's wired end to end —
-  // if this renders, migrations already ran successfully on this device.
-  useAppContainer();
+  const { netWorth } = useAccounts();
+  const { transactions } = useTransactions();
+
+  const summary = useMemo(() => summarizeCurrentMonth(transactions), [transactions]);
+  const surplus = summary.income - summary.expense;
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.status}>Database connection: ready</Text>
+
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>Net worth</Text>
+        <Text style={styles.cardValue}>{formatCurrency(netWorth)}</Text>
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.card, styles.half]}>
+          <Text style={styles.cardLabel}>Income (this month)</Text>
+          <Text style={[styles.cardValueSmall, styles.income]}>{formatCurrency(summary.income)}</Text>
+        </View>
+        <View style={[styles.card, styles.half]}>
+          <Text style={styles.cardLabel}>Expense (this month)</Text>
+          <Text style={[styles.cardValueSmall, styles.expense]}>{formatCurrency(summary.expense)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardLabel}>{surplus >= 0 ? "Surplus" : "Deficit"} (this month)</Text>
+        <Text style={[styles.cardValueSmall, surplus >= 0 ? styles.income : styles.expense]}>
+          {formatCurrency(surplus)}
+        </Text>
+      </View>
+
       <Text style={styles.hint}>
-        This is a placeholder — the real dashboard (income/expense summary,
-        charts) arrives once the Accounts and Transactions features are built.
+        Charts, calendar view, and category breakdowns arrive in the Analytics phase.
       </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 12 },
+  container: { flex: 1, padding: 16, gap: 12 },
   title: { fontSize: 22, fontWeight: "600" },
-  status: { fontSize: 16, color: "#16a34a", fontWeight: "500" },
-  hint: { fontSize: 13, color: "#6b7280", lineHeight: 18 },
+  row: { flexDirection: "row", gap: 12 },
+  half: { flex: 1 },
+  card: { backgroundColor: "#f9fafb", borderRadius: 12, padding: 16, gap: 4 },
+  cardLabel: { fontSize: 12, color: "#6b7280" },
+  cardValue: { fontSize: 26, fontWeight: "700" },
+  cardValueSmall: { fontSize: 18, fontWeight: "700" },
+  income: { color: "#16a34a" },
+  expense: { color: "#dc2626" },
+  hint: { fontSize: 12, color: "#9ca3af", marginTop: 4 },
 });
