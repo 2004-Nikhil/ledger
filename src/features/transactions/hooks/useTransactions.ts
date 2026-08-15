@@ -2,7 +2,7 @@ import { useEffect, useCallback } from "react";
 import { useAppContainer } from "@/composition/AppProvider";
 import { useTransactionStore } from "../store/useTransactionStore";
 import { useAccountStore } from "@/features/accounts/store/useAccountStore";
-import type { CreateTransactionRequest, Transaction } from "../types";
+import type { CreateAdjustmentRequest, CreateTransactionRequest, Transaction } from "../types";
 
 export function useTransactions() {
   const { transactionService, accountService } = useAppContainer();
@@ -12,9 +12,11 @@ export function useTransactions() {
   const error = useTransactionStore((s) => s.error);
   const load = useTransactionStore((s) => s.load);
   const add = useTransactionStore((s) => s.add);
+  const addAdjustment = useTransactionStore((s) => s.addAdjustment);
 
-  // Account balances change as a side effect of creating a transaction —
-  // this is the one place that coordinates the two features refreshing.
+  // Account balances change as a side effect of creating a transaction
+  // or an adjustment — this is the one place that coordinates the two
+  // features refreshing.
   const loadAccounts = useAccountStore((s) => s.load);
 
   useEffect(() => {
@@ -29,6 +31,14 @@ export function useTransactions() {
     [transactionService, accountService, add, loadAccounts]
   );
 
+  const addAdjustmentEntry = useCallback(
+    async (request: CreateAdjustmentRequest) => {
+      await addAdjustment(transactionService, request);
+      await loadAccounts(accountService);
+    },
+    [transactionService, accountService, addAdjustment, loadAccounts]
+  );
+
   const refresh = useCallback(() => load(transactionService), [transactionService, load]);
 
   const isEditable = useCallback(
@@ -36,5 +46,13 @@ export function useTransactions() {
     [transactionService]
   );
 
-  return { transactions, isLoading, error, addTransaction, refresh, isEditable };
+  return {
+    transactions,
+    isLoading,
+    error,
+    addTransaction,
+    addAdjustmentEntry,
+    refresh,
+    isEditable,
+  };
 }

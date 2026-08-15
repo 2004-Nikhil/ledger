@@ -13,6 +13,7 @@ interface TransactionRow {
   notes: string | null;
   locked_until: string;
   created_at: string;
+  adjusts_transaction_id: string | null;
 }
 
 function mapRow(row: TransactionRow): Transaction {
@@ -27,6 +28,7 @@ function mapRow(row: TransactionRow): Transaction {
     notes: row.notes,
     lockedUntil: row.locked_until,
     createdAt: row.created_at,
+    adjustsTransactionId: row.adjusts_transaction_id,
   };
 }
 
@@ -36,8 +38,8 @@ export class SqliteTransactionRepository implements ITransactionRepository {
   async create(input: CreateTransactionRow): Promise<Transaction> {
     await this.db.runAsync(
       `INSERT INTO transactions
-         (id, name, amount, date, category_id, account_id, type, notes, locked_until, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+         (id, name, amount, date, category_id, account_id, type, notes, locked_until, created_at, adjusts_transaction_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         input.id,
         input.name,
@@ -49,6 +51,7 @@ export class SqliteTransactionRepository implements ITransactionRepository {
         input.notes,
         input.lockedUntil,
         input.createdAt,
+        input.adjustsTransactionId,
       ]
     );
 
@@ -63,6 +66,7 @@ export class SqliteTransactionRepository implements ITransactionRepository {
       notes: input.notes,
       lockedUntil: input.lockedUntil,
       createdAt: input.createdAt,
+      adjustsTransactionId: input.adjustsTransactionId,
     };
   }
 

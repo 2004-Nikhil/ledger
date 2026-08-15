@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { TransactionService } from "../services/TransactionService";
-import type { Transaction, CreateTransactionRequest } from "../types";
+import type { Transaction, CreateTransactionRequest, CreateAdjustmentRequest } from "../types";
 
 interface TransactionState {
   transactions: Transaction[];
@@ -8,6 +8,7 @@ interface TransactionState {
   error: string | null;
   load: (service: TransactionService) => Promise<void>;
   add: (service: TransactionService, request: CreateTransactionRequest) => Promise<void>;
+  addAdjustment: (service: TransactionService, request: CreateAdjustmentRequest) => Promise<void>;
 }
 
 function toMessage(error: unknown): string {
@@ -32,5 +33,10 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   add: async (service, request) => {
     const transaction = await service.createTransaction(request);
     set((state) => ({ transactions: [transaction, ...state.transactions] }));
+  },
+
+  addAdjustment: async (service, request) => {
+    const adjustment = await service.createAdjustment(request);
+    set((state) => ({ transactions: [adjustment, ...state.transactions] }));
   },
 }));

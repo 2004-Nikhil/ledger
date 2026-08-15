@@ -11,6 +11,7 @@ export interface CreateTransactionRow {
   notes: string | null;
   lockedUntil: string;
   createdAt: string;
+  adjustsTransactionId: string | null;
 }
 
 export interface ITransactionRepository {
