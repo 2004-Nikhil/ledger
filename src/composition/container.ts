@@ -11,6 +11,12 @@ import { AccountService } from "@/features/accounts/services/AccountService";
 import type { ITransactionRepository } from "@/features/transactions/repositories/ITransactionRepository";
 import { SqliteTransactionRepository } from "@/features/transactions/repositories/SqliteTransactionRepository";
 import { TransactionService } from "@/features/transactions/services/TransactionService";
+import type { ITransferRepository } from "@/features/transfers/repositories/ITransferRepository";
+import { SqliteTransferRepository } from "@/features/transfers/repositories/SqliteTransferRepository";
+import { TransferService } from "@/features/transfers/services/TransferService";
+import type { ILendBorrowRepository } from "@/features/lendBorrow/repositories/ILendBorrowRepository";
+import { SqliteLendBorrowRepository } from "@/features/lendBorrow/repositories/SqliteLendBorrowRepository";
+import { LendBorrowService } from "@/features/lendBorrow/services/LendBorrowService";
 /**
  * The single composition root of the app.
  *
@@ -36,6 +42,10 @@ export interface AppContainer {
   categoryService: CategoryService;
   transactionRepository: ITransactionRepository;
   transactionService: TransactionService;
+  transferRepository: ITransferRepository;
+  transferService: TransferService;
+  lendBorrowRepository: ILendBorrowRepository;
+  lendBorrowService: LendBorrowService;
 }
 
 let containerInstance: AppContainer | null = null;
@@ -47,7 +57,9 @@ export async function buildContainer(): Promise<AppContainer> {
   const accountRepository = new SqliteAccountRepository(db);
   const categoryRepository = new SqliteCategoryRepository(db);
   const transactionRepository = new SqliteTransactionRepository(db);
-  containerInstance = { 
+  const transferRepository = new SqliteTransferRepository(db);
+  const lendBorrowRepository = new SqliteLendBorrowRepository(db);
+  containerInstance = {
     db,
     accountRepository,
     accountService: new AccountService(accountRepository),
@@ -55,7 +67,12 @@ export async function buildContainer(): Promise<AppContainer> {
     categoryService: new CategoryService(categoryRepository),
     transactionRepository,
     transactionService: new TransactionService(db, transactionRepository, accountRepository),
-   };
+    transferRepository,
+    transferService: new TransferService(db, transferRepository, accountRepository),
+    lendBorrowRepository,
+    lendBorrowService: new LendBorrowService(db, lendBorrowRepository, accountRepository),
+  };
+
   return containerInstance;
 }
 
