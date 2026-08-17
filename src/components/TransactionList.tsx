@@ -1,4 +1,4 @@
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet, Pressable } from "react-native";
 import type { Transaction } from "@/features/transactions/types";
 import type { Account } from "@/features/accounts/types";
 import type { Category } from "@/features/categories/types";
@@ -10,9 +10,16 @@ type Props = {
   accountsById: Map<string, Account>;
   categoriesById: Map<string, Category>;
   isEditable: (transaction: Transaction) => boolean;
+  onAdjust?: (transaction: Transaction) => void;
 };
 
-export function TransactionList({ transactions, accountsById, categoriesById, isEditable }: Props) {
+export function TransactionList({
+  transactions,
+  accountsById,
+  categoriesById,
+  isEditable,
+  onAdjust,
+}: Props) {
   return (
     <FlatList
       data={transactions}
@@ -23,16 +30,27 @@ export function TransactionList({ transactions, accountsById, categoriesById, is
         const account = accountsById.get(item.accountId);
         const category = categoriesById.get(item.categoryId);
         const isIncome = item.type === "income";
+        const locked = !isEditable(item);
+        const isAdjustment = item.adjustsTransactionId !== null;
 
         return (
           <View style={styles.row}>
             <View style={styles.left}>
-              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.name}>
+                {isAdjustment ? "\u21B3 " : ""}
+                {item.name}
+              </Text>
               <Text style={styles.meta}>
                 {category?.name ?? "Uncategorized"} · {account?.name ?? "Unknown account"} ·{" "}
                 {formatDisplayDate(item.date)}
-                {!isEditable(item) ? " · locked" : ""}
+                {locked ? " · locked" : ""}
               </Text>
+              {item.notes && isAdjustment && <Text style={styles.reason}>{item.notes}</Text>}
+              {locked && onAdjust && (
+                <Pressable onPress={() => onAdjust(item)} hitSlop={8}>
+                  <Text style={styles.adjustLink}>Adjust</Text>
+                </Pressable>
+              )}
             </View>
             <Text style={[styles.amount, isIncome ? styles.income : styles.expense]}>
               {isIncome ? "+" : "-"}
@@ -50,14 +68,16 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#e5e7eb",
   },
-  left: { flex: 1, paddingRight: 12 },
+  left: { flex: 1, paddingRight: 12, gap: 2 },
   name: { fontSize: 15, fontWeight: "600" },
-  meta: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  meta: { fontSize: 12, color: "#6b7280" },
+  reason: { fontSize: 12, color: "#92400e", fontStyle: "italic" },
+  adjustLink: { fontSize: 12, color: "#2563eb", fontWeight: "600", marginTop: 2 },
   amount: { fontSize: 15, fontWeight: "700" },
   income: { color: "#16a34a" },
   expense: { color: "#dc2626" },
