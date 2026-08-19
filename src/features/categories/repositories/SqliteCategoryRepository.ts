@@ -30,6 +30,14 @@ export class SqliteCategoryRepository implements ICategoryRepository {
     return rows.map(mapRow);
   }
 
+  async findById(id: string): Promise<Category | null> {
+      const row = await this.db.getFirstAsync<CategoryRow>(
+        "SELECT * FROM categories WHERE id = ?;",
+        [id]
+      );
+      return row ? mapRow(row) : null;
+    }
+    
   async create(input: CreateCategoryRow): Promise<Category> {
     await this.db.runAsync(
       "INSERT INTO categories (id, name, type, is_custom, created_at) VALUES (?, ?, ?, 1, ?);",

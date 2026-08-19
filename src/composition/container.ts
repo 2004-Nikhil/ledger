@@ -17,6 +17,10 @@ import { TransferService } from "@/features/transfers/services/TransferService";
 import type { ILendBorrowRepository } from "@/features/lendBorrow/repositories/ILendBorrowRepository";
 import { SqliteLendBorrowRepository } from "@/features/lendBorrow/repositories/SqliteLendBorrowRepository";
 import { LendBorrowService } from "@/features/lendBorrow/services/LendBorrowService";
+import type { IBudgetRepository } from "@/features/budgets/repositories/IBudgetRepository";
+import { SqliteBudgetRepository } from "@/features/budgets/repositories/SqliteBudgetRepository";
+import { BudgetService } from "@/features/budgets/services/BudgetService";
+
 /**
  * The single composition root of the app.
  *
@@ -46,6 +50,8 @@ export interface AppContainer {
   transferService: TransferService;
   lendBorrowRepository: ILendBorrowRepository;
   lendBorrowService: LendBorrowService;
+  budgetRepository: IBudgetRepository;
+  budgetService: BudgetService;
 }
 
 let containerInstance: AppContainer | null = null;
@@ -59,6 +65,8 @@ export async function buildContainer(): Promise<AppContainer> {
   const transactionRepository = new SqliteTransactionRepository(db);
   const transferRepository = new SqliteTransferRepository(db);
   const lendBorrowRepository = new SqliteLendBorrowRepository(db);
+  const budgetRepository = new SqliteBudgetRepository(db);
+
   containerInstance = {
     db,
     accountRepository,
@@ -71,6 +79,8 @@ export async function buildContainer(): Promise<AppContainer> {
     transferService: new TransferService(db, transferRepository, accountRepository),
     lendBorrowRepository,
     lendBorrowService: new LendBorrowService(db, lendBorrowRepository, accountRepository),
+    budgetRepository,
+    budgetService: new BudgetService(budgetRepository, categoryRepository, transactionRepository),
   };
 
   return containerInstance;

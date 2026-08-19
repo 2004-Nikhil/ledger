@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo } from "react";
 import { useAppContainer } from "@/composition/AppProvider";
 import { useCategoryStore } from "../store/useCategoryStore";
-import type { CategoryType } from "../types";
+import type { CategoryType, CreateCategoryRequest } from "../types";
 
 export function useCategories() {
   const { categoryService } = useAppContainer();
@@ -9,6 +9,7 @@ export function useCategories() {
   const isLoading = useCategoryStore((s) => s.isLoading);
   const error = useCategoryStore((s) => s.error);
   const load = useCategoryStore((s) => s.load);
+  const add = useCategoryStore((s) => s.add);
 
   useEffect(() => {
     load(categoryService);
@@ -22,5 +23,10 @@ export function useCategories() {
   const incomeCategories = useMemo(() => byType("income"), [byType]);
   const expenseCategories = useMemo(() => byType("expense"), [byType]);
 
-  return { categories, incomeCategories, expenseCategories, isLoading, error };
+  const addCategory = useCallback(
+    (request: CreateCategoryRequest) => add(categoryService, request),
+    [categoryService, add]
+  );
+
+  return { categories, incomeCategories, expenseCategories, isLoading, error, addCategory };
 }

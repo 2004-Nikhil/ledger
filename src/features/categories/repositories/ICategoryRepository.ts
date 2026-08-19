@@ -9,5 +9,6 @@ export interface CreateCategoryRow {
 
 export interface ICategoryRepository {
   findAll(): Promise<Category[]>;
+  findById(id: string): Promise<Category | null>;
   create(input: CreateCategoryRow): Promise<Category>;
 }
