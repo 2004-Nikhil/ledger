@@ -2,15 +2,23 @@ import { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useTransactions } from "@/features/transactions/hooks/useTransactions";
-import { summarizeCurrentMonth } from "@//utils/monthlySummary";
+import { useInvestments } from "@/features/investments/hooks/useInvestments";
+import { summarizeCurrentMonth } from "@/utils/monthlySummary";
 import { formatCurrency } from "@/utils/currency";
 
 export default function DashboardScreen() {
-  const { netWorth } = useAccounts();
+  const { totalBalance } = useAccounts();
   const { transactions } = useTransactions();
+  const { portfolioSummary } = useInvestments();
 
   const summary = useMemo(() => summarizeCurrentMonth(transactions), [transactions]);
   const surplus = summary.income - summary.expense;
+
+  // True net worth = spendable cash/bank/card balances + investment value.
+  // Deliberately NOT netting out goal contributions or lend/borrow here —
+  // those already reduced/increased the relevant account balance when
+  // they happened, so totalBalance already reflects them correctly.
+  const netWorth = totalBalance + portfolioSummary.totalCurrentValue;
 
   return (
     <View style={styles.container}>
@@ -19,6 +27,9 @@ export default function DashboardScreen() {
       <View style={styles.card}>
         <Text style={styles.cardLabel}>Net worth</Text>
         <Text style={styles.cardValue}>{formatCurrency(netWorth)}</Text>
+        <Text style={styles.breakdown}>
+          {formatCurrency(totalBalance)} spendable + {formatCurrency(portfolioSummary.totalCurrentValue)} invested
+        </Text>
       </View>
 
       <View style={styles.row}>
@@ -55,6 +66,7 @@ const styles = StyleSheet.create({
   cardLabel: { fontSize: 12, color: "#6b7280" },
   cardValue: { fontSize: 26, fontWeight: "700" },
   cardValueSmall: { fontSize: 18, fontWeight: "700" },
+  breakdown: { fontSize: 12, color: "#9ca3af" },
   income: { color: "#16a34a" },
   expense: { color: "#dc2626" },
   hint: { fontSize: 12, color: "#9ca3af", marginTop: 4 },

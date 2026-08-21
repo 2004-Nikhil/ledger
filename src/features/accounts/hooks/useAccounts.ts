@@ -6,7 +6,7 @@ import type { CreateAccountRequest } from "../types";
 export function useAccounts() {
   const { accountService } = useAppContainer();
   const accounts = useAccountStore((s) => s.accounts);
-  const netWorth = useAccountStore((s) => s.netWorth);
+  const totalBalance = useAccountStore((s) => s.totalBalance);
   const isLoading = useAccountStore((s) => s.isLoading);
   const error = useAccountStore((s) => s.error);
   const load = useAccountStore((s) => s.load);
@@ -23,5 +23,5 @@ export function useAccounts() {
 
   const refresh = useCallback(() => load(accountService), [accountService, load]);
 
-  return { accounts, netWorth, isLoading, error, addAccount, refresh };
+  return { accounts, totalBalance, isLoading, error, addAccount, refresh };
 }

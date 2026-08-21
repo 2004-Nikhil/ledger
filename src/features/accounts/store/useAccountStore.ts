@@ -4,7 +4,8 @@ import type { Account, CreateAccountRequest } from "../types";
 
 interface AccountState {
   accounts: Account[];
-  netWorth: number;
+  /** Sum of all account balances — spendable cash/bank/card, NOT true net worth (see Dashboard, which adds investments). */
+  totalBalance: number;
   isLoading: boolean;
   error: string | null;
   load: (service: AccountService) => Promise<void>;
@@ -23,7 +24,7 @@ function toMessage(error: unknown): string {
  */
 export const useAccountStore = create<AccountState>((set) => ({
   accounts: [],
-  netWorth: 0,
+  totalBalance: 0,
   isLoading: false,
   error: null,
 
@@ -31,8 +32,8 @@ export const useAccountStore = create<AccountState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const accounts = await service.listAccounts();
-      const netWorth = accounts.reduce((sum, a) => sum + a.currentBalance, 0);
-      set({ accounts, netWorth, isLoading: false });
+      const totalBalance = accounts.reduce((sum, a) => sum + a.currentBalance, 0);
+      set({ accounts, totalBalance, isLoading: false });
     } catch (error) {
       set({ error: toMessage(error), isLoading: false });
     }
@@ -42,7 +43,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     const account = await service.createAccount(request);
     set((state) => ({
       accounts: [...state.accounts, account],
-      netWorth: state.netWorth + account.currentBalance,
+      totalBalance: state.totalBalance + account.currentBalance,
     }));
   },
 }));

@@ -8,14 +8,14 @@ import { TransferForm } from "@/components/TransferForm";
 import { TransferList } from "@/components/TransferList";
 
 export default function AccountsScreen() {
-  const { accounts, netWorth, addAccount } = useAccounts();
+  const { accounts, totalBalance, addAccount } = useAccounts();
   const { transfers, addTransfer } = useTransfers();
 
   const accountsById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <AccountList accounts={accounts} netWorth={netWorth} />
+      <AccountList accounts={accounts} netWorth={totalBalance} />
 
       {accounts.length >= 2 && <TransferForm accounts={accounts} onSubmit={addTransfer} />}
       <TransferList transfers={transfers} accountsById={accountsById} />

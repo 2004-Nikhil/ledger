@@ -20,6 +20,12 @@ import { LendBorrowService } from "@/features/lendBorrow/services/LendBorrowServ
 import type { IBudgetRepository } from "@/features/budgets/repositories/IBudgetRepository";
 import { SqliteBudgetRepository } from "@/features/budgets/repositories/SqliteBudgetRepository";
 import { BudgetService } from "@/features/budgets/services/BudgetService";
+import type { IGoalRepository } from "@/features/goals/repositories/IGoalRepository";
+import { SqliteGoalRepository } from "@/features/goals/repositories/SqliteGoalRepository";
+import { GoalService } from "@/features/goals/services/GoalService";
+import type { IInvestmentRepository } from "@/features/investments/repositories/IInvestmentRepository";
+import { SqliteInvestmentRepository } from "@/features/investments/repositories/SqliteInvestmentRepository";
+import { InvestmentService } from "@/features/investments/services/InvestmentService";
 
 /**
  * The single composition root of the app.
@@ -52,6 +58,10 @@ export interface AppContainer {
   lendBorrowService: LendBorrowService;
   budgetRepository: IBudgetRepository;
   budgetService: BudgetService;
+  goalRepository: IGoalRepository;
+  goalService: GoalService;
+  investmentRepository: IInvestmentRepository;
+  investmentService: InvestmentService;
 }
 
 let containerInstance: AppContainer | null = null;
@@ -66,7 +76,8 @@ export async function buildContainer(): Promise<AppContainer> {
   const transferRepository = new SqliteTransferRepository(db);
   const lendBorrowRepository = new SqliteLendBorrowRepository(db);
   const budgetRepository = new SqliteBudgetRepository(db);
-
+  const goalRepository = new SqliteGoalRepository(db);
+  const investmentRepository = new SqliteInvestmentRepository(db);
   containerInstance = {
     db,
     accountRepository,
@@ -81,6 +92,10 @@ export async function buildContainer(): Promise<AppContainer> {
     lendBorrowService: new LendBorrowService(db, lendBorrowRepository, accountRepository),
     budgetRepository,
     budgetService: new BudgetService(budgetRepository, categoryRepository, transactionRepository),
+    goalRepository,
+    goalService: new GoalService(db, goalRepository, accountRepository),
+    investmentRepository,
+    investmentService: new InvestmentService(investmentRepository),
   };
 
   return containerInstance;
