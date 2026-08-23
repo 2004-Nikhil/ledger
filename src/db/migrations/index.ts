@@ -8,6 +8,7 @@ import { migration006LendBorrow } from "./006_lend_borrow";
 import { migration007Budgets } from "./007_budgets";
 import { migration008Goals } from "./008_goals";
 import { migration009Investments } from "./009_investments";
+import { migration010LendBorrowRepayments } from "./010_lend_borrow_repayments";
 
 // Append new migrations here, in order, as later phases add tables
 // Never edit a migration that has already shipped — add a new one instead.
@@ -21,4 +22,5 @@ export const migrations: Migration[] = [
     migration007Budgets,
     migration008Goals,
     migration009Investments,
+    migration010LendBorrowRepayments,
 ];

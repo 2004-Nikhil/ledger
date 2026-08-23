@@ -75,8 +75,19 @@ export class LendBorrowService {
     // borrowed decreases it.
     const delta = entry.direction === "lent" ? request.amount : -request.amount;
 
+    const repaymentRow = {
+      id: generateId("lbr"),
+      lendBorrowId: entry.id,
+      amount: request.amount,
+      date: new Date().toISOString().slice(0, 10),
+      createdAt: new Date().toISOString(),
+    };
+
     await this.db.withTransactionAsync(async () => {
       await this.lendBorrowRepository.updateRepayment(entry.id, newPaidAmount, status);
+      // This dated record is what lets Analytics reconstruct historical
+      // balances — updateRepayment alone only tracks current totals.
+      await this.lendBorrowRepository.createRepaymentRecord(repaymentRow);
       await this.accountRepository.adjustBalance(entry.accountId, delta);
     });
 

@@ -29,3 +29,12 @@ export interface RecordRepaymentRequest {
   lendBorrowId: string;
   amount: number;
 }
+
+/** One dated repayment event — the audit trail recordRepayment writes to, alongside the cached paidAmount/status on LendBorrow. */
+export interface LendBorrowRepaymentRecord {
+  id: string;
+  lendBorrowId: string;
+  amount: number;
+  date: string;
+  createdAt: string;
+}
