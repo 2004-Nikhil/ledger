@@ -25,4 +25,5 @@ export interface IGoalRepository {
   /** Sets the new accumulated_amount directly — the service computes the new total. */
   updateAccumulated(id: string, accumulatedAmount: number): Promise<void>;
   createContribution(input: CreateContributionRow): Promise<GoalContribution>;
+  findAllContributions(): Promise<GoalContribution[]>;
 }

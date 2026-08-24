@@ -26,6 +26,7 @@ import { GoalService } from "@/features/goals/services/GoalService";
 import type { IInvestmentRepository } from "@/features/investments/repositories/IInvestmentRepository";
 import { SqliteInvestmentRepository } from "@/features/investments/repositories/SqliteInvestmentRepository";
 import { InvestmentService } from "@/features/investments/services/InvestmentService";
+import { AnalyticsService } from "@/features/analytics/services/AnalyticsService";
 
 /**
  * The single composition root of the app.
@@ -62,6 +63,8 @@ export interface AppContainer {
   goalService: GoalService;
   investmentRepository: IInvestmentRepository;
   investmentService: InvestmentService;
+  /** No repository of its own — Analytics is a read-only view over five other features' data. */
+  analyticsService: AnalyticsService;
 }
 
 let containerInstance: AppContainer | null = null;
@@ -96,6 +99,13 @@ export async function buildContainer(): Promise<AppContainer> {
     goalService: new GoalService(db, goalRepository, accountRepository),
     investmentRepository,
     investmentService: new InvestmentService(investmentRepository),
+    analyticsService: new AnalyticsService(
+      accountRepository,
+      categoryRepository,
+      transactionRepository,
+      lendBorrowRepository,
+      goalRepository
+    ),
   };
 
   return containerInstance;

@@ -86,4 +86,9 @@ export class SqliteGoalRepository implements IGoalRepository {
     );
     return { ...input };
   }
+
+  async findAllContributions(): Promise<GoalContribution[]> {
+    const rows = await this.db.getAllAsync<ContributionRow>("SELECT * FROM goal_contributions;");
+    return rows.map(mapContributionRow);
+  }
 }
