@@ -1,15 +1,24 @@
-import { useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { useMemo, useState } from "react";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useAccounts } from "@/features/accounts/hooks/useAccounts";
 import { useTransactions } from "@/features/transactions/hooks/useTransactions";
 import { useInvestments } from "@/features/investments/hooks/useInvestments";
+import { useAnalytics } from "@/features/analytics/hooks/useAnalytics";
+import { useCategories } from "@/features/categories/hooks/useCategories";
 import { summarizeCurrentMonth } from "@/utils/monthlySummary";
 import { formatCurrency } from "@/utils/currency";
+import { CategoryPieChart } from "@/components/CategoryPieChart";
+import { BalanceTrendChart } from "@/components/BalanceTrendChart";
+import { IncomeExpenseBarChart } from "@/components/IncomeExpenseBarChart";
+import { CategoryTrendChart } from "@/components/CategoryTrendChart";
 
 export default function DashboardScreen() {
   const { totalBalance } = useAccounts();
   const { transactions } = useTransactions();
   const { portfolioSummary } = useInvestments();
+  const { expenseCategories } = useCategories();
+  const { balanceTrend, incomeExpenseTrend, categoryBreakdown, categoryTrend, viewCategoryTrend } = useAnalytics();
+  const [trendCategoryId, setTrendCategoryId] = useState<string | null>(null);
 
   const summary = useMemo(() => summarizeCurrentMonth(transactions), [transactions]);
   const surplus = summary.income - summary.expense;
@@ -20,8 +29,13 @@ export default function DashboardScreen() {
   // they happened, so totalBalance already reflects them correctly.
   const netWorth = totalBalance + portfolioSummary.totalCurrentValue;
 
+  const handleSelectTrendCategory = (categoryId: string) => {
+    setTrendCategoryId(categoryId);
+    viewCategoryTrend(categoryId);
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.scrollWrapper} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Dashboard</Text>
 
       <View style={styles.card}>
@@ -50,15 +64,37 @@ export default function DashboardScreen() {
         </Text>
       </View>
 
-      <Text style={styles.hint}>
-        Charts, calendar view, and category breakdowns arrive in the Analytics phase.
-      </Text>
-    </View>
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>Expense breakdown (this month)</Text>
+        <CategoryPieChart slices={categoryBreakdown} />
+      </View>
+
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>Balance trend</Text>
+        <BalanceTrendChart points={balanceTrend} />
+      </View>
+
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>Income vs expense</Text>
+        <IncomeExpenseBarChart points={incomeExpenseTrend} />
+      </View>
+
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>Category trend</Text>
+        <CategoryTrendChart
+          expenseCategories={expenseCategories}
+          selectedCategoryId={trendCategoryId}
+          onSelectCategory={handleSelectTrendCategory}
+          trend={categoryTrend}
+        />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 12 },
+  scrollWrapper: { flex: 1 },
+  container: { padding: 16, gap: 12 },
   title: { fontSize: 22, fontWeight: "600" },
   row: { flexDirection: "row", gap: 12 },
   half: { flex: 1 },
@@ -69,5 +105,6 @@ const styles = StyleSheet.create({
   breakdown: { fontSize: 12, color: "#9ca3af" },
   income: { color: "#16a34a" },
   expense: { color: "#dc2626" },
-  hint: { fontSize: 12, color: "#9ca3af", marginTop: 4 },
+  chartCard: { backgroundColor: "#ffffff", borderRadius: 12, padding: 12, gap: 8, borderWidth: 1, borderColor: "#f3f4f6" },
+  chartTitle: { fontSize: 14, fontWeight: "600", color: "#374151" },
 });
