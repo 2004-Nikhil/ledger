@@ -120,4 +120,12 @@ export class SqliteLendBorrowRepository implements ILendBorrowRepository {
     const rows = await this.db.getAllAsync<RepaymentRow>("SELECT * FROM lend_borrow_repayments;");
     return rows.map(mapRepaymentRow);
   }
+
+  async findRepaymentById(id: string): Promise<LendBorrowRepaymentRecord | null> {
+    const row = await this.db.getFirstAsync<RepaymentRow>(
+      "SELECT * FROM lend_borrow_repayments WHERE id = ?;",
+      [id]
+    );
+    return row ? mapRepaymentRow(row) : null;
+  }
 }

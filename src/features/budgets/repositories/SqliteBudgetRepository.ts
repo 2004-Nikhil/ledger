@@ -38,6 +38,11 @@ export class SqliteBudgetRepository implements IBudgetRepository {
     return row ? mapRow(row) : null;
   }
 
+  async findById(id: string): Promise<Budget | null> {
+    const row = await this.db.getFirstAsync<BudgetRow>("SELECT * FROM budgets WHERE id = ?;", [id]);
+    return row ? mapRow(row) : null;
+  }
+
   async create(input: UpsertBudgetRow): Promise<Budget> {
     await this.db.runAsync(
       `INSERT INTO budgets (id, category_id, month, allotted_amount, rollover_enabled, created_at)

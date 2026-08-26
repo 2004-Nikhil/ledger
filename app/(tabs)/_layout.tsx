@@ -13,7 +13,7 @@ function tabIcon(name: IconName) {
 
 export default function TabsLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: true }}>
+    <Tabs screenOptions={{ headerShown: true, tabBarActiveTintColor: "#d8d81a" }}>
       <Tabs.Screen name="index" options={{ title: "Dashboard", tabBarIcon: tabIcon("home") }} />
       <Tabs.Screen name="accounts" options={{ title: "Accounts", tabBarIcon: tabIcon("wallet") }} />
       <Tabs.Screen name="transactions" options={{ title: "Transactions", tabBarIcon: tabIcon("swap-horizontal") }} />
@@ -21,6 +21,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="budgets" options={{ title: "Budgets", tabBarIcon: tabIcon("pie-chart") }} />
       <Tabs.Screen name="goals" options={{ title: "Goals", tabBarIcon: tabIcon("flag") }} />
       <Tabs.Screen name="investments" options={{ title: "Investments", tabBarIcon: tabIcon("trending-up") }} />
+      <Tabs.Screen name="data" options={{ title: "Data", tabBarIcon: tabIcon("cloud-upload") }} />
     </Tabs>
   );
 }

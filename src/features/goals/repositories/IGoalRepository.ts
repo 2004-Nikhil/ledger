@@ -26,4 +26,5 @@ export interface IGoalRepository {
   updateAccumulated(id: string, accumulatedAmount: number): Promise<void>;
   createContribution(input: CreateContributionRow): Promise<GoalContribution>;
   findAllContributions(): Promise<GoalContribution[]>;
+  findContributionById(id: string): Promise<GoalContribution | null>;
 }

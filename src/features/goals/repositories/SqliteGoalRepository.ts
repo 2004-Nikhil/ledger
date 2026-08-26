@@ -91,4 +91,12 @@ export class SqliteGoalRepository implements IGoalRepository {
     const rows = await this.db.getAllAsync<ContributionRow>("SELECT * FROM goal_contributions;");
     return rows.map(mapContributionRow);
   }
+
+  async findContributionById(id: string): Promise<GoalContribution | null> {
+    const row = await this.db.getFirstAsync<ContributionRow>(
+      "SELECT * FROM goal_contributions WHERE id = ?;",
+      [id]
+    );
+    return row ? mapContributionRow(row) : null;
+  }
 }

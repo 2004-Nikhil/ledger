@@ -13,4 +13,5 @@ export interface CreateTransferRow {
 export interface ITransferRepository {
   create(input: CreateTransferRow): Promise<Transfer>;
   findAll(): Promise<Transfer[]>;
+  findById(id: string): Promise<Transfer | null>;
 }

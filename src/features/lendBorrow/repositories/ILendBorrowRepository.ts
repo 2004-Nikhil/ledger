@@ -29,4 +29,5 @@ export interface ILendBorrowRepository {
   /** The dated audit trail a repayment leaves behind — needed to reconstruct historical balances. */
   createRepaymentRecord(input: CreateRepaymentRow): Promise<LendBorrowRepaymentRecord>;
   findAllRepayments(): Promise<LendBorrowRepaymentRecord[]>;
+  findRepaymentById(id: string): Promise<LendBorrowRepaymentRecord | null>;
 }

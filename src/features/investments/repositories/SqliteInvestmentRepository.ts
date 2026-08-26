@@ -60,4 +60,9 @@ export class SqliteInvestmentRepository implements IInvestmentRepository {
   async updateCurrentValue(id: string, currentValue: number): Promise<void> {
     await this.db.runAsync("UPDATE investments SET current_value = ? WHERE id = ?;", [currentValue, id]);
   }
+
+  async findById(id: string): Promise<Investment | null> {
+    const row = await this.db.getFirstAsync<InvestmentRow>("SELECT * FROM investments WHERE id = ?;", [id]);
+    return row ? mapRow(row) : null;
+  }
 }

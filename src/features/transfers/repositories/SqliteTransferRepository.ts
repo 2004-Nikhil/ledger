@@ -42,4 +42,9 @@ export class SqliteTransferRepository implements ITransferRepository {
     );
     return rows.map(mapRow);
   }
+
+  async findById(id: string): Promise<Transfer | null> {
+    const row = await this.db.getFirstAsync<TransferRow>("SELECT * FROM transfers WHERE id = ?;", [id]);
+    return row ? mapRow(row) : null;
+  }
 }

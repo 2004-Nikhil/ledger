@@ -16,4 +16,5 @@ export interface IInvestmentRepository {
   create(input: CreateInvestmentRow): Promise<Investment>;
   findAll(): Promise<Investment[]>;
   updateCurrentValue(id: string, currentValue: number): Promise<void>;
+  findById(id: string): Promise<Investment | null>;
 }
