@@ -9,9 +9,9 @@
       "expo-asset"
     ],
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true
     },
@@ -25,13 +25,15 @@
       "package": "com.nikhilnawani.ledger"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single"
     },
     "extra": {
       "router": {},
       "eas": {
         "projectId": "536a587d-0e60-4a6c-8246-7f0acb735b37"
       }
-    }
+    },
+    "backgroundColor": "#080A0F"
   }
 }
