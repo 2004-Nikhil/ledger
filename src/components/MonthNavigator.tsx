@@ -1,4 +1,6 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { IconButton, Text } from "@/ui";
+import { colors, radius } from "@/ui";
 import { formatMonthLabel } from "@/utils/date";
 
 type Props = {
@@ -7,22 +9,31 @@ type Props = {
   onNext: () => void;
 };
 
+/** Glass pill: previous · month · next. Arrows are full 44pt touch targets. */
 export function MonthNavigator({ month, onPrevious, onNext }: Props) {
+  const label = formatMonthLabel(month);
   return (
-    <View style={styles.row}>
-      <Pressable onPress={onPrevious} hitSlop={10}>
-        <Text style={styles.arrow}>{"\u2039"}</Text>
-      </Pressable>
-      <Text style={styles.label}>{formatMonthLabel(month)}</Text>
-      <Pressable onPress={onNext} hitSlop={10}>
-        <Text style={styles.arrow}>{"\u203A"}</Text>
-      </Pressable>
+    <View style={styles.row} accessibilityRole="toolbar">
+      <IconButton icon="chevron-back" size={40} accessibilityLabel="Previous month" onPress={onPrevious} style={styles.arrow} />
+      <Text variant="subheading" style={styles.label} accessibilityLiveRegion="polite" numberOfLines={1}>
+        {label}
+      </Text>
+      <IconButton icon="chevron-forward" size={40} accessibilityLabel="Next month" onPress={onNext} style={styles.arrow} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 20, paddingVertical: 4 },
-  arrow: { fontSize: 24, color: "#2563eb", fontWeight: "700", paddingHorizontal: 8 },
-  label: { fontSize: 16, fontWeight: "600", minWidth: 160, textAlign: "center" },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth * 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.glass,
+  },
+  arrow: { borderWidth: 0, backgroundColor: "rgba(255,255,255,0.05)" },
+  label: { flex: 1, textAlign: "center" },
 });

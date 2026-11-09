@@ -1,5 +1,6 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import { formatCurrency } from "@/utils/currency";
+import { StyleSheet, View } from "react-native";
+import { PressableScale, Text, colors, compactMoney, money } from "@/ui";
+import { todayIso } from "@/utils/date";
 
 type Props = {
   /** "YYYY-MM" */
@@ -22,19 +23,19 @@ export function TransactionCalendar({ month, netByDate, selectedDate, onSelectDa
 
   const firstWeekday = new Date(year, monthIndex, 1).getDay(); // 0 = Sunday
   const totalDays = daysInMonth(year, monthIndex);
+  const today = todayIso();
 
   const cells: Array<{ day: number; date: string } | null> = [];
   for (let i = 0; i < firstWeekday; i++) cells.push(null);
   for (let day = 1; day <= totalDays; day++) {
-    const date = `${month}-${String(day).padStart(2, "0")}`;
-    cells.push({ day, date });
+    cells.push({ day, date: `${month}-${String(day).padStart(2, "0")}` });
   }
 
   return (
     <View>
       <View style={styles.weekdayRow}>
         {WEEKDAY_LABELS.map((label, index) => (
-          <Text key={index} style={styles.weekdayLabel}>
+          <Text key={index} variant="micro" tone="muted" style={styles.weekdayLabel}>
             {label}
           </Text>
         ))}
@@ -46,24 +47,29 @@ export function TransactionCalendar({ month, netByDate, selectedDate, onSelectDa
 
           const net = netByDate.get(cell.date);
           const isSelected = selectedDate === cell.date;
+          const isToday = cell.date === today;
 
           return (
-            <Pressable
-              key={cell.date}
-              style={[styles.cell, styles.dayCell, isSelected && styles.dayCellSelected]}
-              onPress={() => onSelectDate(cell.date)}
-            >
-              <Text style={[styles.dayNumber, isSelected && styles.dayNumberSelected]}>{cell.day}</Text>
-              {net !== undefined && (
-                <Text
-                  style={[styles.dayNet, net >= 0 ? styles.dayNetPositive : styles.dayNetNegative]}
-                  numberOfLines={1}
-                >
-                  {net >= 0 ? "+" : ""}
-                  {formatCurrency(net)}
+            <View key={cell.date} style={styles.cell}>
+              <PressableScale
+                onPress={() => onSelectDate(cell.date)}
+                scale={0.94}
+                accessibilityRole="button"
+                accessibilityLabel={`${cell.date}${net !== undefined ? `, net ${net >= 0 ? "+" : "\u2212"}${money(Math.abs(net))}` : ", no transactions"}`}
+                accessibilityState={{ selected: isSelected }}
+                style={[styles.day, isToday && styles.today, isSelected && styles.selected]}
+              >
+                <Text variant="captionStrong" tone={isSelected ? "primary" : "secondary"}>
+                  {cell.day}
                 </Text>
-              )}
-            </Pressable>
+                {net !== undefined ? (
+                  <Text variant="micro" tone={net >= 0 ? "positive" : "negative"} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={styles.net}>
+                    {net >= 0 ? "+" : ""}
+                    {compactMoney(net)}
+                  </Text>
+                ) : null}
+              </PressableScale>
+            </View>
           );
         })}
       </View>
@@ -71,18 +77,22 @@ export function TransactionCalendar({ month, netByDate, selectedDate, onSelectDa
   );
 }
 
-const CELL_PERCENT = "14.28%"; // 100 / 7
+const CELL_PERCENT = "14.2857%"; // 100 / 7
 
 const styles = StyleSheet.create({
-  weekdayRow: { flexDirection: "row" },
-  weekdayLabel: { width: CELL_PERCENT, textAlign: "center", fontSize: 11, color: "#9ca3af", fontWeight: "600" },
+  weekdayRow: { flexDirection: "row", marginBottom: 6 },
+  weekdayLabel: { width: CELL_PERCENT, textAlign: "center" },
   grid: { flexDirection: "row", flexWrap: "wrap" },
-  cell: { width: CELL_PERCENT, aspectRatio: 1, alignItems: "center", justifyContent: "center", padding: 2 },
-  dayCell: { borderRadius: 8 },
-  dayCellSelected: { backgroundColor: "#eff6ff" },
-  dayNumber: { fontSize: 12, color: "#374151" },
-  dayNumberSelected: { color: "#2563eb", fontWeight: "700" },
-  dayNet: { fontSize: 8, marginTop: 2 },
-  dayNetPositive: { color: "#16a34a" },
-  dayNetNegative: { color: "#dc2626" },
+  cell: { width: CELL_PERCENT, aspectRatio: 1, padding: 2 },
+  day: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth * 1.5,
+    borderColor: "transparent",
+  },
+  today: { borderColor: colors.borderStrong },
+  selected: { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder },
+  net: { fontSize: 10, lineHeight: 12, maxWidth: "100%" },
 });

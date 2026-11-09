@@ -1,7 +1,8 @@
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { Transfer } from "@/features/transfers/types";
 import type { Account } from "@/features/accounts/types";
-import { formatCurrency } from "@/utils/currency";
+import { Divider, GlassCard, MoneyText, Text, colors, space } from "@/ui";
 import { formatDisplayDate } from "@/utils/date";
 
 type Props = {
@@ -13,38 +14,37 @@ export function TransferList({ transfers, accountsById }: Props) {
   if (transfers.length === 0) return null;
 
   return (
-    <View>
-      <Text style={styles.title}>Recent transfers</Text>
-      <FlatList
-        data={transfers}
-        scrollEnabled={false}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.route}>
-              {accountsById.get(item.fromAccountId)?.name ?? "Unknown"} {"\u2192"}{" "}
-              {accountsById.get(item.toAccountId)?.name ?? "Unknown"}
-            </Text>
-            <Text style={styles.meta}>{formatDisplayDate(item.date)}</Text>
-            <Text style={styles.amount}>{formatCurrency(item.amount)}</Text>
+    <GlassCard style={{ paddingHorizontal: space.lg }}>
+      {transfers.map((item, i) => {
+        const from = accountsById.get(item.fromAccountId)?.name ?? "Unknown";
+        const to = accountsById.get(item.toAccountId)?.name ?? "Unknown";
+        return (
+          <View key={item.id}>
+            {i > 0 && <Divider />}
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: 14 }}
+              accessible
+              accessibilityLabel={`Transfer from ${from} to ${to}, ${formatDisplayDate(item.date)}`}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text variant="bodyStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
+                    {from}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={14} color={colors.accentText} />
+                  <Text variant="bodyStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
+                    {to}
+                  </Text>
+                </View>
+                <Text variant="caption" tone="secondary">
+                  {formatDisplayDate(item.date)}
+                </Text>
+              </View>
+              <MoneyText amount={item.amount} size="figureSm" style={{ maxWidth: 140 }} align="right" />
+            </View>
           </View>
-        )}
-      />
-    </View>
+        );
+      })}
+    </GlassCard>
   );
 }
-
-const styles = StyleSheet.create({
-  title: { fontSize: 13, fontWeight: "600", color: "#6b7280", marginTop: 12, marginBottom: 4 },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e7eb",
-  },
-  route: { fontSize: 13, fontWeight: "500", flex: 1 },
-  meta: { fontSize: 12, color: "#9ca3af", marginHorizontal: 8 },
-  amount: { fontSize: 13, fontWeight: "700", color: "#7c3aed" },
-});

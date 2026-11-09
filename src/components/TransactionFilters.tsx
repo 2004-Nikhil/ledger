@@ -1,7 +1,9 @@
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
+import { useState } from "react";
+import { View } from "react-native";
 import type { Account } from "@/features/accounts/types";
 import type { Category } from "@/features/categories/types";
 import type { TransactionFilters as Filters, TransactionSort } from "@/utils/filterSort";
+import { Chip, ChipRow, IconButton, Text, TextField, space } from "@/ui";
 
 type Props = {
   filters: Filters;
@@ -10,9 +12,14 @@ type Props = {
   onSortChange: (sort: TransactionSort) => void;
   accounts: Account[];
   categories: Category[];
+  /** Horizontal page padding, so chip rows can scroll edge to edge. */
+  bleed?: number;
 };
 
-export function TransactionFilters({ filters, onFiltersChange, sort, onSortChange, accounts, categories }: Props) {
+export function TransactionFilters({ filters, onFiltersChange, sort, onSortChange, accounts, categories, bleed = 0 }: Props) {
+  const [open, setOpen] = useState(false);
+  const activeCount = (filters.categoryId ? 1 : 0) + (filters.accountId ? 1 : 0);
+
   const toggleSortField = (field: TransactionSort["field"]) => {
     if (sort.field === field) {
       onSortChange({ field, direction: sort.direction === "asc" ? "desc" : "asc" });
@@ -22,82 +29,78 @@ export function TransactionFilters({ filters, onFiltersChange, sort, onSortChang
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.search}
-        placeholder="Search name or notes"
-        value={filters.search}
-        onChangeText={(search) => onFiltersChange({ ...filters, search })}
-      />
+    <View style={{ gap: space.md }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+        <View style={{ flex: 1 }}>
+          <TextField
+            icon="search-outline"
+            placeholder="Search name or notes"
+            value={filters.search}
+            onChangeText={(search) => onFiltersChange({ ...filters, search })}
+            returnKeyType="search"
+            autoCorrect={false}
+            accessibilityLabel="Search transactions"
+          />
+        </View>
+        <View>
+          <IconButton
+            icon={open ? "options" : "options-outline"}
+            size={52}
+            accessibilityLabel={open ? "Hide filters" : activeCount ? `Show filters, ${activeCount} active` : "Show filters"}
+            onPress={() => setOpen((v) => !v)}
+            style={{ borderRadius: 16, ...(activeCount ? { borderColor: "rgba(79,124,255,0.42)", backgroundColor: "rgba(79,124,255,0.16)" } : null) }}
+          />
+          {activeCount > 0 && (
+            <View style={{ position: "absolute", top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: "#45D9FF" }} />
+          )}
+        </View>
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-        <Pressable
-          onPress={() => onFiltersChange({ ...filters, categoryId: null })}
-          style={[styles.chip, filters.categoryId === null && styles.chipActive]}
-        >
-          <Text style={[styles.chipText, filters.categoryId === null && styles.chipTextActive]}>All categories</Text>
-        </Pressable>
-        {categories.map((c) => (
-          <Pressable
-            key={c.id}
-            onPress={() => onFiltersChange({ ...filters, categoryId: c.id })}
-            style={[styles.chip, filters.categoryId === c.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, filters.categoryId === c.id && styles.chipTextActive]}>{c.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-        <Pressable
-          onPress={() => onFiltersChange({ ...filters, accountId: null })}
-          style={[styles.chip, filters.accountId === null && styles.chipActive]}
-        >
-          <Text style={[styles.chipText, filters.accountId === null && styles.chipTextActive]}>All accounts</Text>
-        </Pressable>
-        {accounts.map((a) => (
-          <Pressable
-            key={a.id}
-            onPress={() => onFiltersChange({ ...filters, accountId: a.id })}
-            style={[styles.chip, filters.accountId === a.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, filters.accountId === a.id && styles.chipTextActive]}>{a.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <View style={styles.sortRow}>
-        <Text style={styles.sortLabel}>Sort:</Text>
-        {(["date", "amount"] as const).map((field) => (
-          <Pressable key={field} onPress={() => toggleSortField(field)} style={styles.sortButton}>
-            <Text style={[styles.sortButtonText, sort.field === field && styles.sortButtonTextActive]}>
-              {field === "date" ? "Date" : "Amount"} {sort.field === field ? (sort.direction === "asc" ? "\u2191" : "\u2193") : ""}
+      {open && (
+        <View style={{ gap: space.md }}>
+          <View style={{ gap: 8 }}>
+            <Text variant="captionStrong" tone="secondary">
+              Category
             </Text>
-          </Pressable>
-        ))}
+            <ChipRow bleed={bleed}>
+              <Chip label="All" selected={filters.categoryId === null} onPress={() => onFiltersChange({ ...filters, categoryId: null })} accessibilityLabel="All categories" />
+              {categories.map((c) => (
+                <Chip key={c.id} label={c.name} selected={filters.categoryId === c.id} onPress={() => onFiltersChange({ ...filters, categoryId: c.id })} />
+              ))}
+            </ChipRow>
+          </View>
+          <View style={{ gap: 8 }}>
+            <Text variant="captionStrong" tone="secondary">
+              Account
+            </Text>
+            <ChipRow bleed={bleed}>
+              <Chip label="All" selected={filters.accountId === null} onPress={() => onFiltersChange({ ...filters, accountId: null })} accessibilityLabel="All accounts" />
+              {accounts.map((a) => (
+                <Chip key={a.id} label={a.name} selected={filters.accountId === a.id} onPress={() => onFiltersChange({ ...filters, accountId: a.id })} />
+              ))}
+            </ChipRow>
+          </View>
+        </View>
+      )}
+
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Text variant="caption" tone="secondary">
+          Sort by
+        </Text>
+        {(["date", "amount"] as const).map((field) => {
+          const selected = sort.field === field;
+          return (
+            <Chip
+              key={field}
+              label={field === "date" ? "Date" : "Amount"}
+              icon={selected ? (sort.direction === "asc" ? "arrow-up" : "arrow-down") : undefined}
+              selected={selected}
+              onPress={() => toggleSortField(field)}
+              accessibilityLabel={`Sort by ${field}${selected ? (sort.direction === "asc" ? ", ascending" : ", descending") : ""}`}
+            />
+          );
+        })}
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 8, marginBottom: 8 },
-  search: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13,
-  },
-  chipScroll: { flexGrow: 0 },
-  chip: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8 },
-  chipActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  chipText: { fontSize: 12, color: "#374151" },
-  chipTextActive: { color: "#ffffff", fontWeight: "600" },
-  sortRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  sortLabel: { fontSize: 12, color: "#6b7280" },
-  sortButton: { paddingVertical: 4 },
-  sortButtonText: { fontSize: 12, color: "#9ca3af" },
-  sortButtonTextActive: { color: "#2563eb", fontWeight: "700" },
-});
