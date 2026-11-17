@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View } from "react-native";
 import type { CreateGoalRequest } from "@/features/goals/types";
+import { Button, InlineError, TextField, CURRENCY_SYMBOL, space } from "@/ui";
 
 type Props = {
   onSubmit: (request: CreateGoalRequest) => Promise<void>;
 };
 
+/** Rendered inside a Sheet titled "New savings goal". */
 export function GoalForm({ onSubmit }: Props) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -36,47 +38,23 @@ export function GoalForm({ onSubmit }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add savings goal</Text>
-
-      <TextInput style={styles.input} placeholder="Goal name (e.g. Emergency Fund)" value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Category (e.g. Safety Net)" value={category} onChangeText={setCategory} />
-      <TextInput
-        style={styles.input}
-        placeholder="Required amount"
-        value={requiredAmount}
-        onChangeText={setRequiredAmount}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Target date YYYY-MM-DD (optional)"
+    <View style={{ gap: space.lg }}>
+      <TextField label="Goal name" placeholder="e.g. Emergency Fund" value={name} onChangeText={setName} />
+      <TextField label="Category" placeholder="e.g. Safety Net" value={category} onChangeText={setCategory} />
+      <TextField size="lg" label="Required amount" prefix={CURRENCY_SYMBOL} placeholder="0" value={requiredAmount} onChangeText={setRequiredAmount} keyboardType="numeric" />
+      <TextField
+        label="Target date"
+        placeholder="YYYY-MM-DD (optional)"
+        helper="Use the format 2027-03-31."
         value={targetDate}
         onChangeText={setTargetDate}
+        keyboardType="numbers-and-punctuation"
+        autoCorrect={false}
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error ? <InlineError message={error} /> : null}
 
-      <Pressable style={[styles.submit, isSubmitting && styles.submitDisabled]} onPress={handleSubmit} disabled={isSubmitting}>
-        <Text style={styles.submitText}>{isSubmitting ? "Adding…" : "Add goal"}</Text>
-      </Pressable>
+      <Button label={isSubmitting ? "Adding…" : "Add goal"} loading={isSubmitting} onPress={handleSubmit} fullWidth size="lg" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 10, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#e5e7eb" },
-  title: { fontSize: 15, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  error: { color: "#dc2626", fontSize: 13 },
-  submit: { backgroundColor: "#9333ea", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
-  submitDisabled: { opacity: 0.6 },
-  submitText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
-});

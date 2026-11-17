@@ -1,82 +1,62 @@
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View } from "react-native";
 import type { CategoryBudgetSummary } from "../features/budgets/types";
-import { formatCurrency } from "@/utils/currency";
+import { EmptyState, GlassPressable, MoneyText, ProgressBar, SkeletonRows, Text, money, space } from "@/ui";
 
 type Props = {
   summaries: CategoryBudgetSummary[];
   selectedCategoryId: string | null;
   onSelectCategory: (categoryId: string) => void;
+  loading?: boolean;
 };
 
-export function BudgetSummaryList({ summaries, selectedCategoryId, onSelectCategory }: Props) {
+export function BudgetSummaryList({ summaries, selectedCategoryId, onSelectCategory, loading = false }: Props) {
+  if (loading && summaries.length === 0) return <SkeletonRows count={4} />;
+  if (summaries.length === 0) {
+    return <EmptyState icon="pie-chart-outline" title="No expense categories yet" message="Add a category to start setting monthly budgets." />;
+  }
+
   return (
-    <FlatList
-      data={summaries}
-      scrollEnabled={false}
-      keyExtractor={(item) => item.categoryId}
-      ListEmptyComponent={<Text style={styles.empty}>No expense categories yet.</Text>}
-      renderItem={({ item }) => {
-        const pct =
-          item.effectiveAllotted > 0
-            ? Math.min(1, item.actual / item.effectiveAllotted)
-            : item.actual > 0
-              ? 1
-              : 0;
+    <View style={{ gap: space.md }}>
+      {summaries.map((item) => {
+        const pct = item.effectiveAllotted > 0 ? Math.min(1, item.actual / item.effectiveAllotted) : item.actual > 0 ? 1 : 0;
         const over = item.remaining < 0;
         const untouched = item.effectiveAllotted === 0 && item.actual === 0;
 
         return (
-          <Pressable
-            style={[styles.row, selectedCategoryId === item.categoryId && styles.rowSelected]}
+          <GlassPressable
+            key={item.categoryId}
+            selected={selectedCategoryId === item.categoryId}
             onPress={() => onSelectCategory(item.categoryId)}
+            accessibilityLabel={
+              untouched
+                ? `${item.categoryName}, no budget set. Tap to set one.`
+                : `${item.categoryName}, ${money(item.actual)} of ${money(item.effectiveAllotted)}, ${over ? "over by" : "left"} ${money(Math.abs(item.remaining))}. Tap to edit.`
+            }
+            style={{ padding: space.lg, gap: space.md }}
           >
-            <View style={styles.headerRow}>
-              <Text style={styles.name}>{item.categoryName}</Text>
-              {!untouched && (
-                <Text style={[styles.remaining, over ? styles.over : styles.under]}>
-                  {over ? "Over by " : "Left "}
-                  {formatCurrency(Math.abs(item.remaining))}
-                </Text>
-              )}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: space.md }}>
+              <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
+                {item.categoryName}
+              </Text>
+              {!untouched ? (
+                <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                  <Text variant="caption" tone={over ? "negative" : "secondary"}>
+                    {over ? "Over by" : "Left"}
+                  </Text>
+                  <MoneyText amount={Math.abs(item.remaining)} size="figureSm" tone={over ? "negative" : "primary"} decimals={0} style={{ maxWidth: 130 }} />
+                </View>
+              ) : null}
             </View>
 
-            {!untouched && (
-              <View style={styles.barTrack}>
-                <View style={[styles.barFill, { width: `${pct * 100}%` }, over && styles.barOver]} />
-              </View>
-            )}
+            {!untouched ? <ProgressBar value={pct} tone={over ? "negative" : "accent"} label={`${item.categoryName} budget used`} /> : null}
 
-            <Text style={styles.meta}>
-              {untouched
-                ? "No budget set — tap to add one"
-                : `${formatCurrency(item.actual)} of ${formatCurrency(item.effectiveAllotted)}`}
-              {item.rolledOverIn > 0 ? ` (+${formatCurrency(item.rolledOverIn)} rolled over)` : ""}
+            <Text variant="caption" tone="secondary">
+              {untouched ? "No budget set. Tap to add one." : `${money(item.actual, 0)} of ${money(item.effectiveAllotted, 0)}`}
+              {item.rolledOverIn > 0 ? `  ·  +${money(item.rolledOverIn, 0)} rolled over` : ""}
             </Text>
-          </Pressable>
+          </GlassPressable>
         );
-      }}
-    />
+      })}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  empty: { color: "#6b7280", fontSize: 13, paddingVertical: 12 },
-  row: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e7eb",
-    gap: 6,
-    borderRadius: 8,
-  },
-  rowSelected: { backgroundColor: "#eff6ff" },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  name: { fontSize: 15, fontWeight: "600" },
-  remaining: { fontSize: 13, fontWeight: "700" },
-  over: { color: "#dc2626" },
-  under: { color: "#16a34a" },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: "#e5e7eb", overflow: "hidden" },
-  barFill: { height: 6, backgroundColor: "#2563eb" },
-  barOver: { backgroundColor: "#dc2626" },
-  meta: { fontSize: 12, color: "#6b7280" },
-});

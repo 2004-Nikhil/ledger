@@ -1,6 +1,9 @@
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useDataBackup } from "@/features/data/hooks/useDataBackup";
 import { formatDisplayDate } from "@/utils/date";
+import { Button, Divider, ErrorNotice, GlassCard, Screen, Text, colors, space } from "@/ui";
+import type { IconName } from "@/ui";
 
 const TABLE_LABELS: Record<string, string> = {
   accounts: "Accounts",
@@ -15,75 +18,88 @@ const TABLE_LABELS: Record<string, string> = {
   investments: "Investments",
 };
 
+function ActionCard({ icon, title, body, children }: { icon: IconName; title: string; body: string; children: React.ReactNode }) {
+  return (
+    <GlassCard padding={space.xl} style={{ gap: space.lg }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder }}>
+          <Ionicons name={icon} size={20} color={colors.accentText} />
+        </View>
+        <Text variant="heading" style={{ flex: 1 }}>
+          {title}
+        </Text>
+      </View>
+      <Text variant="body" tone="secondary">
+        {body}
+      </Text>
+      {children}
+    </GlassCard>
+  );
+}
+
 export default function DataScreen() {
   const { status, error, lastImportSummary, lastExportedAt, exportBackup, importBackup } = useDataBackup();
   const isBusy = status !== "idle";
 
+  const importedRows = lastImportSummary
+    ? Object.keys(TABLE_LABELS)
+        .map((key) => ({
+          key,
+          imported: lastImportSummary.imported[key as keyof typeof lastImportSummary.imported] ?? 0,
+          skipped: lastImportSummary.skipped[key as keyof typeof lastImportSummary.skipped] ?? 0,
+        }))
+    : [];
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Backup &amp; Restore</Text>
-      <Text style={styles.intro}>
-        Export everything — accounts, transactions, budgets, goals, investments, all of it — into
-        one JSON file. Saving it to Google Drive (or anywhere else) is just picking it from the
-        share sheet that opens after exporting.
-      </Text>
+    <Screen title="Backup and restore" subtitle="Your data lives on this device. Keep a copy somewhere safe.">
+      {error ? <ErrorNotice title={status === "importing" ? "Import failed" : "Backup problem"} message={error} /> : null}
 
-      <Pressable style={[styles.button, styles.exportButton, isBusy && styles.buttonDisabled]} onPress={exportBackup} disabled={isBusy}>
-        <Text style={styles.buttonText}>{status === "exporting" ? "Exporting…" : "Export backup"}</Text>
-      </Pressable>
+      <ActionCard
+        icon="cloud-upload-outline"
+        title="Export a backup"
+        body="Export everything (accounts, transactions, budgets, goals, investments, all of it) into one JSON file. To save it to Google Drive or anywhere else, pick it from the share sheet that opens."
+      >
+        <Button label={status === "exporting" ? "Exporting…" : "Export backup"} icon="share-outline" loading={status === "exporting"} disabled={isBusy} onPress={exportBackup} fullWidth size="lg" />
+        {lastExportedAt ? (
+          <Text variant="caption" tone="secondary">
+            Last export: {formatDisplayDate(lastExportedAt)}
+          </Text>
+        ) : null}
+      </ActionCard>
 
-      {lastExportedAt && (
-        <Text style={styles.hint}>Last export: {formatDisplayDate(lastExportedAt)}</Text>
-      )}
+      <ActionCard
+        icon="cloud-download-outline"
+        title="Restore from a backup"
+        body="Pick a backup file from Drive, Files, or wherever you saved it. Anything not already in the app gets added; anything that already exists is left untouched. Nothing is overwritten or duplicated."
+      >
+        <Button label={status === "importing" ? "Importing…" : "Import backup"} icon="folder-open-outline" variant="glass" loading={status === "importing"} disabled={isBusy} onPress={importBackup} fullWidth size="lg" />
+      </ActionCard>
 
-      <View style={styles.divider} />
-
-      <Text style={styles.title}>Restore from a backup</Text>
-      <Text style={styles.intro}>
-        Pick a backup file (from Drive, Files, wherever you saved it). Anything not already in the
-        app gets added; anything that already exists is left untouched — nothing gets overwritten
-        or duplicated.
-      </Text>
-
-      <Pressable style={[styles.button, styles.importButton, isBusy && styles.buttonDisabled]} onPress={importBackup} disabled={isBusy}>
-        <Text style={styles.buttonText}>{status === "importing" ? "Importing…" : "Import backup"}</Text>
-      </Pressable>
-
-      {error && <Text style={styles.error}>{error}</Text>}
-
-      {lastImportSummary && (
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Last import</Text>
-          {Object.keys(TABLE_LABELS).map((key) => {
-            const imported = lastImportSummary.imported[key as keyof typeof lastImportSummary.imported] ?? 0;
-            const skipped = lastImportSummary.skipped[key as keyof typeof lastImportSummary.skipped] ?? 0;
-            if (imported === 0 && skipped === 0) return null;
-            return (
-              <Text key={key} style={styles.summaryRow}>
-                {TABLE_LABELS[key]}: {imported} added, {skipped} already there
-              </Text>
-            );
-          })}
+      {lastImportSummary ? (
+        <View style={{ gap: space.md }}>
+          <Text variant="heading" accessibilityRole="header">
+            Last import
+          </Text>
+          <GlassCard style={{ paddingHorizontal: space.lg }}>
+            {importedRows.map((r, i) => (
+                <View key={r.key}>
+                  {i > 0 && <Divider />}
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: space.md, paddingVertical: 14 }}>
+                    <Text variant="bodyStrong" tone={r.imported === 0 && r.skipped === 0 ? "secondary" : "primary"} style={{ flex: 1 }}>
+                      {TABLE_LABELS[r.key]}
+                    </Text>
+                    <Text variant="caption" tone="secondary" style={{ textAlign: "right", flexShrink: 1 }}>
+                      <Text variant="captionStrong" tone={r.imported > 0 ? "positive" : "secondary"}>
+                        {r.imported} added
+                      </Text>
+                      {`  ·  ${r.skipped} already there`}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+          </GlassCard>
         </View>
-      )}
-    </ScrollView>
+      ) : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, gap: 8 },
-  title: { fontSize: 17, fontWeight: "600", marginTop: 8 },
-  intro: { fontSize: 13, color: "#6b7280", lineHeight: 18 },
-  button: { borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 4 },
-  exportButton: { backgroundColor: "#2563eb" },
-  importButton: { backgroundColor: "#16a34a" },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
-  hint: { fontSize: 12, color: "#9ca3af" },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: "#e5e7eb", marginVertical: 12 },
-  error: { color: "#dc2626", fontSize: 13 },
-  summaryCard: { backgroundColor: "#f9fafb", borderRadius: 10, padding: 12, gap: 4, marginTop: 8 },
-  summaryTitle: { fontSize: 13, fontWeight: "700", color: "#374151" },
-  summaryRow: { fontSize: 12, color: "#6b7280" },
-});

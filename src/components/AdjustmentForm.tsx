@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { CreateAdjustmentRequest, Transaction } from "@/features/transactions/types";
-import { formatCurrency } from "@/utils/currency";
+import { Button, GlassCard, InlineError, Text, TextField, CURRENCY_SYMBOL, colors, money, space } from "@/ui";
 
 type Props = {
   original: Transaction;
@@ -9,6 +10,7 @@ type Props = {
   onCancel: () => void;
 };
 
+/** Rendered inside a Sheet titled "Adjust entry". */
 export function AdjustmentForm({ original, onSubmit, onCancel }: Props) {
   const [correctedAmount, setCorrectedAmount] = useState(String(original.amount));
   const [reason, setReason] = useState("");
@@ -32,63 +34,37 @@ export function AdjustmentForm({ original, onSubmit, onCancel }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Adjust "{original.name}"</Text>
-      <Text style={styles.hint}>
-        This is locked ({formatCurrency(original.amount)}, {original.type}) and can't be edited
-        directly. Adding an adjustment creates a new entry that corrects the balance and keeps
-        the original visible, for the audit trail.
-      </Text>
+    <View style={{ gap: space.lg }}>
+      <GlassCard quiet padding={space.lg} style={{ flexDirection: "row", gap: 12 }}>
+        <Ionicons name="lock-closed-outline" size={18} color={colors.accentText} style={{ marginTop: 2 }} />
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text variant="bodyStrong" numberOfLines={2}>
+            {original.name}
+          </Text>
+          <Text variant="caption" tone="secondary">
+            This {original.type} of {money(original.amount)} is locked and can't be edited. An adjustment adds a new entry that
+            corrects the balance and keeps the original visible, for the audit trail.
+          </Text>
+        </View>
+      </GlassCard>
 
-      <Text style={styles.label}>Corrected amount</Text>
-      <TextInput
-        style={styles.input}
+      <TextField
+        size="lg"
+        label="Corrected amount"
+        prefix={CURRENCY_SYMBOL}
         value={correctedAmount}
         onChangeText={setCorrectedAmount}
         keyboardType="numeric"
       />
 
-      <Text style={styles.label}>Reason</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g. Typed the wrong amount"
-        value={reason}
-        onChangeText={setReason}
-      />
+      <TextField label="Reason" placeholder="e.g. Typed the wrong amount" value={reason} onChangeText={setReason} />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error ? <InlineError message={error} /> : null}
 
-      <View style={styles.actions}>
-        <Pressable style={styles.cancel} onPress={onCancel} disabled={isSubmitting}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </Pressable>
-        <Pressable style={[styles.submit, isSubmitting && styles.submitDisabled]} onPress={handleSubmit} disabled={isSubmitting}>
-          <Text style={styles.submitText}>{isSubmitting ? "Saving…" : "Save adjustment"}</Text>
-        </Pressable>
+      <View style={{ flexDirection: "row", gap: space.md }}>
+        <Button label="Cancel" variant="glass" size="lg" onPress={onCancel} disabled={isSubmitting} style={{ flex: 1 }} />
+        <Button label={isSubmitting ? "Saving…" : "Save adjustment"} loading={isSubmitting} onPress={handleSubmit} size="lg" style={{ flex: 2 }} />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 8, padding: 12, backgroundColor: "#fffbeb", borderRadius: 10, marginVertical: 8 },
-  title: { fontSize: 14, fontWeight: "600" },
-  hint: { fontSize: 12, color: "#92400e", lineHeight: 16 },
-  label: { fontSize: 12, color: "#6b7280", marginTop: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    backgroundColor: "#ffffff",
-  },
-  error: { color: "#dc2626", fontSize: 12 },
-  actions: { flexDirection: "row", gap: 8, marginTop: 4 },
-  cancel: { flex: 1, alignItems: "center", paddingVertical: 10 },
-  cancelText: { color: "#6b7280", fontSize: 13 },
-  submit: { flex: 2, backgroundColor: "#b45309", borderRadius: 8, paddingVertical: 10, alignItems: "center" },
-  submitDisabled: { opacity: 0.6 },
-  submitText: { color: "#ffffff", fontWeight: "600", fontSize: 13 },
-});

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, Switch, StyleSheet } from "react-native";
+import { View } from "react-native";
 import type { CategoryBudgetSummary, SetBudgetRequest } from "@/features/budgets/types";
+import { Button, InlineError, SwitchRow, TextField, CURRENCY_SYMBOL, space } from "@/ui";
 
 type Props = {
   summary: CategoryBudgetSummary;
   onSubmit: (request: Omit<SetBudgetRequest, "month">) => Promise<void>;
 };
 
+/** Rendered inside a Sheet titled "Budget · {category}". */
 export function BudgetForm({ summary, onSubmit }: Props) {
   const [amount, setAmount] = useState(summary.allotted ? String(summary.allotted) : "");
   const [rolloverEnabled, setRolloverEnabled] = useState(summary.rolloverEnabled);
@@ -36,46 +38,22 @@ export function BudgetForm({ summary, onSubmit }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Budget for {summary.categoryName}</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Monthly allotted amount"
+    <View style={{ gap: space.lg }}>
+      <TextField
+        size="lg"
+        label="Monthly allotted amount"
+        prefix={CURRENCY_SYMBOL}
+        placeholder="0"
         value={amount}
         onChangeText={setAmount}
         keyboardType="numeric"
       />
 
-      <View style={styles.switchRow}>
-        <Text style={styles.switchLabel}>Roll unused amount into next month</Text>
-        <Switch value={rolloverEnabled} onValueChange={setRolloverEnabled} />
-      </View>
+      <SwitchRow label="Roll unused amount into next month" value={rolloverEnabled} onValueChange={setRolloverEnabled} />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error ? <InlineError message={error} /> : null}
 
-      <Pressable style={[styles.submit, isSubmitting && styles.submitDisabled]} onPress={handleSubmit} disabled={isSubmitting}>
-        <Text style={styles.submitText}>{isSubmitting ? "Saving…" : "Save budget"}</Text>
-      </Pressable>
+      <Button label={isSubmitting ? "Saving…" : "Save budget"} loading={isSubmitting} onPress={handleSubmit} fullWidth size="lg" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 10, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#e5e7eb" },
-  title: { fontSize: 15, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  switchLabel: { fontSize: 13, color: "#374151", flex: 1, paddingRight: 12 },
-  error: { color: "#dc2626", fontSize: 13 },
-  submit: { backgroundColor: "#2563eb", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
-  submitDisabled: { opacity: 0.6 },
-  submitText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
-});

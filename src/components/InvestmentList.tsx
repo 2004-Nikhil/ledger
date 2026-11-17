@@ -1,27 +1,23 @@
 import { useState } from "react";
-import { View, Text, FlatList, TextInput, Pressable, StyleSheet } from "react-native";
+import { View } from "react-native";
 import type { Investment, PortfolioSummary } from "@/features/investments/types";
-import { formatCurrency } from "@/utils/currency";
+import { Button, Divider, EmptyState, GlassCard, InlineError, MoneyText, SkeletonRows, Text, TextField, CURRENCY_SYMBOL, money, percent, space } from "@/ui";
 
 type Props = {
   investments: Investment[];
   summary: PortfolioSummary;
   onUpdateValue: (investmentId: string, currentValue: number) => Promise<void>;
+  loading?: boolean;
+  onAddInvestment?: () => void;
 };
 
 const TYPE_LABEL: Record<Investment["type"], string> = {
   stock: "Stock",
-  mutual_fund: "Mutual Fund",
+  mutual_fund: "Mutual fund",
   sip: "SIP",
 };
 
-function InvestmentRow({
-  investment,
-  onUpdateValue,
-}: {
-  investment: Investment;
-  onUpdateValue: Props["onUpdateValue"];
-}) {
+function InvestmentRow({ investment, onUpdateValue }: { investment: Investment; onUpdateValue: Props["onUpdateValue"] }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(String(investment.currentValue));
   const [error, setError] = useState<string | null>(null);
@@ -46,103 +42,91 @@ function InvestmentRow({
     }
   };
 
+  const details =
+    TYPE_LABEL[investment.type] +
+    (investment.units > 0 ? ` · ${investment.units} units @ ${money(investment.buyPrice)}` : "") +
+    (investment.type === "sip" && investment.sipAmount ? ` · ${money(investment.sipAmount, 0)}/${investment.sipFrequency}` : "");
+
   return (
-    <View style={styles.row}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.name}>{investment.name}</Text>
-          <Text style={styles.type}>
-            {TYPE_LABEL[investment.type]}
-            {investment.units > 0 ? ` · ${investment.units} units @ ${formatCurrency(investment.buyPrice)}` : ""}
-            {investment.type === "sip" && investment.sipAmount
-              ? ` · ${formatCurrency(investment.sipAmount)}/${investment.sipFrequency}`
-              : ""}
+    <View style={{ paddingVertical: 16, gap: space.md }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: space.md }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="bodyStrong" numberOfLines={2}>
+            {investment.name}
+          </Text>
+          <Text variant="caption" tone="secondary">
+            {details}
           </Text>
         </View>
-        <View style={styles.valueBlock}>
-          <Text style={styles.value}>{formatCurrency(investment.currentValue)}</Text>
-          {cost > 0 && (
-            <Text style={[styles.gain, gain >= 0 ? styles.up : styles.down]}>
-              {gain >= 0 ? "+" : ""}
-              {formatCurrency(gain)} ({gainPercent.toFixed(1)}%)
+        <View style={{ alignItems: "flex-end", gap: 2, maxWidth: "48%" }}>
+          <MoneyText amount={investment.currentValue} size="figureSm" align="right" />
+          {cost > 0 ? (
+            <Text variant="caption" tone={gain >= 0 ? "positive" : "negative"}>
+              {gain >= 0 ? "+" : "\u2212"}
+              {money(Math.abs(gain), 0)} ({gainPercent.toFixed(1)}%)
             </Text>
-          )}
+          ) : null}
         </View>
       </View>
 
       {!editing ? (
-        <Pressable onPress={() => setEditing(true)} hitSlop={6}>
-          <Text style={styles.updateLink}>Update current value</Text>
-        </Pressable>
+        <Button label="Update value" variant="glass" size="sm" icon="create-outline" onPress={() => setEditing(true)} accessibilityLabel={`Update current value of ${investment.name}`} />
       ) : (
-        <View style={styles.editRow}>
-          <TextInput style={styles.input} value={value} onChangeText={setValue} keyboardType="numeric" />
-          <Pressable style={styles.saveButton} onPress={handleSave} disabled={isSubmitting}>
-            <Text style={styles.saveButtonText}>{isSubmitting ? "…" : "Save"}</Text>
-          </Pressable>
-          <Pressable onPress={() => setEditing(false)} hitSlop={6}>
-            <Text style={styles.cancelLink}>Cancel</Text>
-          </Pressable>
+        <View style={{ gap: space.sm }}>
+          <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start" }}>
+            <View style={{ flex: 1 }}>
+              <TextField prefix={CURRENCY_SYMBOL} value={value} onChangeText={setValue} keyboardType="numeric" accessibilityLabel={`Current value of ${investment.name}`} autoFocus />
+            </View>
+            <Button label={isSubmitting ? "…" : "Save"} onPress={handleSave} loading={isSubmitting} size="lg" style={{ minHeight: 52 }} />
+          </View>
+          <Button label="Cancel" variant="ghost" size="sm" onPress={() => setEditing(false)} />
         </View>
       )}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error ? <InlineError message={error} /> : null}
     </View>
   );
 }
 
-export function InvestmentList({ investments, summary, onUpdateValue }: Props) {
+export function InvestmentList({ investments, summary, onUpdateValue, loading = false, onAddInvestment }: Props) {
+  const up = summary.totalGain >= 0;
   return (
-    <View>
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Portfolio value</Text>
-        <Text style={styles.summaryValue}>{formatCurrency(summary.totalCurrentValue)}</Text>
-        {summary.totalCost > 0 && (
-          <Text style={[styles.summaryGain, summary.totalGain >= 0 ? styles.up : styles.down]}>
-            {summary.totalGain >= 0 ? "+" : ""}
-            {formatCurrency(summary.totalGain)} ({summary.totalGainPercent.toFixed(1)}%)
+    <View style={{ gap: space.xl }}>
+      <GlassCard variant="solid" glow={summary.totalCost > 0 && up ? "green" : "blue"} glowCorner="tr" padding={space.xl} style={{ gap: space.sm }}>
+        <Text variant="caption" tone="secondary">
+          Portfolio value
+        </Text>
+        <MoneyText amount={summary.totalCurrentValue} size="display" animate />
+        {summary.totalCost > 0 ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text variant="captionStrong" tone={up ? "positive" : "negative"}>
+              {up ? "+" : "\u2212"}
+              {money(Math.abs(summary.totalGain), 0)} ({percent(Math.abs(summary.totalGainPercent))})
+            </Text>
+            <Text variant="caption" tone="secondary">
+              on {money(summary.totalCost, 0)} invested
+            </Text>
+          </View>
+        ) : (
+          <Text variant="caption" tone="secondary">
+            Add units and a buy price to see your gain.
           </Text>
         )}
-      </View>
+      </GlassCard>
 
-      <FlatList
-        data={investments}
-        scrollEnabled={false}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No investments tracked yet — add one below.</Text>}
-        renderItem={({ item }) => <InvestmentRow investment={item} onUpdateValue={onUpdateValue} />}
-      />
+      {loading && investments.length === 0 ? (
+        <SkeletonRows count={3} />
+      ) : investments.length === 0 ? (
+        <EmptyState icon="trending-up-outline" title="No investments tracked yet" message="Track stocks, funds, and SIPs to include them in your net worth." actionLabel={onAddInvestment ? "Add investment" : undefined} onAction={onAddInvestment} />
+      ) : (
+        <GlassCard style={{ paddingHorizontal: space.lg }}>
+          {investments.map((item, i) => (
+            <View key={item.id}>
+              {i > 0 && <Divider />}
+              <InvestmentRow investment={item} onUpdateValue={onUpdateValue} />
+            </View>
+          ))}
+        </GlassCard>
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  summaryCard: { backgroundColor: "#eff6ff", borderRadius: 12, padding: 16, gap: 4, marginBottom: 8 },
-  summaryLabel: { fontSize: 13, color: "#1e40af" },
-  summaryValue: { fontSize: 26, fontWeight: "700", color: "#1e40af" },
-  summaryGain: { fontSize: 13, fontWeight: "600" },
-  empty: { color: "#6b7280", fontSize: 13, paddingVertical: 12 },
-  row: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e5e7eb", gap: 6 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  name: { fontSize: 15, fontWeight: "600" },
-  type: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  valueBlock: { alignItems: "flex-end" },
-  value: { fontSize: 15, fontWeight: "700" },
-  gain: { fontSize: 12, fontWeight: "600" },
-  up: { color: "#16a34a" },
-  down: { color: "#dc2626" },
-  updateLink: { fontSize: 12, color: "#2563eb", fontWeight: "600" },
-  editRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 13,
-  },
-  saveButton: { backgroundColor: "#2563eb", borderRadius: 8, paddingHorizontal: 14, justifyContent: "center", paddingVertical: 8 },
-  saveButtonText: { color: "#ffffff", fontWeight: "600", fontSize: 13 },
-  cancelLink: { fontSize: 12, color: "#6b7280" },
-  error: { color: "#dc2626", fontSize: 12 },
-});

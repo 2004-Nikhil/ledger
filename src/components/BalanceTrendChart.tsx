@@ -1,32 +1,25 @@
-import { Dimensions } from "react-native";
-import { LineChart } from "react-native-chart-kit";
 import type { BalanceTrendPoint } from "../features/analytics/types";
-import { chartTheme } from "../features/analytics/chartTheme";
-import { formatMonthLabel } from "@/utils/date";
+import { LineTrend, Text, money, shortMonth } from "@/ui";
 
 type Props = {
   points: BalanceTrendPoint[];
+  height?: number;
 };
 
-const CHART_WIDTH = Dimensions.get("window").width - 64;
-
-export function BalanceTrendChart({ points }: Props) {
-  const data = {
-    labels: points.map((p) => formatMonthLabel(p.month).split(" ")[0].slice(0, 3)),
-    datasets: [{ data: points.map((p) => p.totalBalance) }],
-  };
-
+export function BalanceTrendChart({ points, height = 168 }: Props) {
+  if (points.length === 0) {
+    return (
+      <Text variant="caption" tone="secondary">
+        Balance history appears once you have some activity.
+      </Text>
+    );
+  }
   return (
-    <LineChart
-      data={data}
-      width={CHART_WIDTH}
-      height={180}
-      chartConfig={chartTheme}
-      bezier
-      withInnerLines={false}
-      withOuterLines={false}
-      yAxisLabel=""
-      yAxisSuffix=""
+    <LineTrend
+      data={points.map((p) => ({ label: shortMonth(p.month), value: p.totalBalance }))}
+      height={height}
+      tone="accent"
+      formatValue={(v) => money(v, 0)}
     />
   );
 }

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View } from "react-native";
 import type { CreateLendBorrowRequest, LendBorrowDirection } from "../features/lendBorrow/types";
 import type { Account } from "@/features/accounts/types";
+import { Button, Chip, ChipRow, InlineError, Segmented, Text, TextField, CURRENCY_SYMBOL, space } from "@/ui";
 import { todayIso } from "@/utils/date";
 
 type Props = {
@@ -9,6 +10,12 @@ type Props = {
   onSubmit: (request: CreateLendBorrowRequest) => Promise<void>;
 };
 
+const DIRECTIONS: { value: LendBorrowDirection; label: string }[] = [
+  { value: "lent", label: "I lent" },
+  { value: "borrowed", label: "I borrowed" },
+];
+
+/** Rendered inside a Sheet titled "Lend or borrow". */
 export function LendBorrowForm({ accounts, onSubmit }: Props) {
   const [direction, setDirection] = useState<LendBorrowDirection>("lent");
   const [person, setPerson] = useState("");
@@ -46,85 +53,37 @@ export function LendBorrowForm({ accounts, onSubmit }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Lend / Borrow</Text>
+    <View style={{ gap: space.lg }}>
+      <Segmented options={DIRECTIONS} value={direction} onChange={setDirection} />
 
-      <View style={styles.typeRow}>
-        {(["lent", "borrowed"] as LendBorrowDirection[]).map((d) => (
-          <Pressable
-            key={d}
-            onPress={() => setDirection(d)}
-            style={[styles.typeChip, direction === d && styles.typeChipActive]}
-          >
-            <Text style={[styles.typeChipText, direction === d && styles.typeChipTextActive]}>
-              {d === "lent" ? "I lent" : "I borrowed"}
-            </Text>
-          </Pressable>
-        ))}
+      <TextField size="lg" label="Amount" prefix={CURRENCY_SYMBOL} placeholder="0" value={amount} onChangeText={setAmount} keyboardType="numeric" />
+
+      <TextField label="Person" placeholder="Who is it with?" value={person} onChangeText={setPerson} autoCapitalize="words" />
+
+      <View style={{ gap: 8 }}>
+        <Text variant="captionStrong" tone="secondary">
+          Account
+        </Text>
+        <ChipRow bleed={space.xl}>
+          {accounts.map((a) => (
+            <Chip key={a.id} label={a.name} selected={accountId === a.id} onPress={() => setAccountId(a.id)} />
+          ))}
+        </ChipRow>
       </View>
 
-      <TextInput style={styles.input} placeholder="Person" value={person} onChangeText={setPerson} />
-      <TextInput
-        style={styles.input}
-        placeholder="Amount"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
-
-      <Text style={styles.label}>Account</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-        {accounts.map((a) => (
-          <Pressable
-            key={a.id}
-            onPress={() => setAccountId(a.id)}
-            style={[styles.chip, accountId === a.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, accountId === a.id && styles.chipTextActive]}>{a.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Due date YYYY-MM-DD (optional)"
+      <TextField
+        label="Due date"
+        placeholder="YYYY-MM-DD (optional)"
+        helper="Use the format 2026-12-31."
         value={dueDate}
         onChangeText={setDueDate}
+        keyboardType="numbers-and-punctuation"
+        autoCorrect={false}
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error ? <InlineError message={error} /> : null}
 
-      <Pressable style={[styles.submit, isSubmitting && styles.submitDisabled]} onPress={handleSubmit} disabled={isSubmitting}>
-        <Text style={styles.submitText}>{isSubmitting ? "Saving…" : "Save"}</Text>
-      </Pressable>
+      <Button label={isSubmitting ? "Saving…" : "Save"} loading={isSubmitting} onPress={handleSubmit} fullWidth size="lg" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 10, paddingVertical: 12 },
-  title: { fontSize: 15, fontWeight: "600" },
-  label: { fontSize: 12, color: "#6b7280" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  typeRow: { flexDirection: "row", gap: 8 },
-  typeChip: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  typeChipActive: { backgroundColor: "#0891b2", borderColor: "#0891b2" },
-  typeChipText: { fontSize: 13, color: "#374151" },
-  typeChipTextActive: { color: "#ffffff", fontWeight: "600" },
-  chipScroll: { flexGrow: 0 },
-  chip: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8 },
-  chipActive: { backgroundColor: "#0891b2", borderColor: "#0891b2" },
-  chipText: { fontSize: 12, color: "#374151" },
-  chipTextActive: { color: "#ffffff", fontWeight: "600" },
-  error: { color: "#dc2626", fontSize: 13 },
-  submit: { backgroundColor: "#0891b2", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
-  submitDisabled: { opacity: 0.6 },
-  submitText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
-});

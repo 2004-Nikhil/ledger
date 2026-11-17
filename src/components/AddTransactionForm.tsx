@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View } from "react-native";
 import type { CreateTransactionRequest, TransactionType } from "@/features/transactions/types";
 import type { Account } from "@/features/accounts/types";
 import type { Category } from "@/features/categories/types";
+import { Button, Chip, ChipRow, InlineError, Segmented, Text, TextField, CURRENCY_SYMBOL, space } from "@/ui";
 import { todayIso } from "@/utils/date";
 
 type Props = {
@@ -12,6 +13,12 @@ type Props = {
   onSubmit: (request: CreateTransactionRequest) => Promise<void>;
 };
 
+const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
+  { value: "expense", label: "Expense" },
+  { value: "income", label: "Income" },
+];
+
+/** Rendered inside a Sheet (which supplies the title and page padding). */
 export function AddTransactionForm({ accounts, incomeCategories, expenseCategories, onSubmit }: Props) {
   const [type, setType] = useState<TransactionType>("expense");
   const [name, setName] = useState("");
@@ -59,112 +66,61 @@ export function AddTransactionForm({ accounts, incomeCategories, expenseCategori
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Log transaction</Text>
+    <View style={{ gap: space.lg }}>
+      <Segmented
+        options={TYPE_OPTIONS}
+        value={type}
+        onChange={(t) => {
+          setType(t);
+          setCategoryId(null);
+        }}
+      />
 
-      <View style={styles.typeRow}>
-        {(["expense", "income"] as TransactionType[]).map((t) => (
-          <Pressable
-            key={t}
-            onPress={() => {
-              setType(t);
-              setCategoryId(null);
-            }}
-            style={[styles.typeChip, type === t && styles.typeChipActive]}
-          >
-            <Text style={[styles.typeChipText, type === t && styles.typeChipTextActive]}>
-              {t === "expense" ? "Expense" : "Income"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <TextInput style={styles.input} placeholder="Name (e.g. Groceries)" value={name} onChangeText={setName} />
-      <TextInput
-        style={styles.input}
-        placeholder="Amount"
+      <TextField
+        size="lg"
+        label="Amount"
+        prefix={CURRENCY_SYMBOL}
+        placeholder="0"
         value={amount}
         onChangeText={setAmount}
         keyboardType="numeric"
       />
 
-      <Text style={styles.label}>Category</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-        {categories.map((c) => (
-          <Pressable
-            key={c.id}
-            onPress={() => setCategoryId(c.id)}
-            style={[styles.chip, categoryId === c.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, categoryId === c.id && styles.chipTextActive]}>{c.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <TextField label="Name" placeholder="e.g. Groceries" value={name} onChangeText={setName} returnKeyType="next" />
 
-      <Text style={styles.label}>Account</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-        {accounts.map((a) => (
-          <Pressable
-            key={a.id}
-            onPress={() => setAccountId(a.id)}
-            style={[styles.chip, accountId === a.id && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, accountId === a.id && styles.chipTextActive]}>{a.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <View style={{ gap: 8 }}>
+        <Text variant="captionStrong" tone="secondary">
+          Category
+        </Text>
+        {categories.length === 0 ? (
+          <Text variant="caption" tone="muted">
+            No {type} categories yet. Add one from Budgets.
+          </Text>
+        ) : (
+          <ChipRow bleed={space.xl}>
+            {categories.map((c) => (
+              <Chip key={c.id} label={c.name} selected={categoryId === c.id} onPress={() => setCategoryId(c.id)} />
+            ))}
+          </ChipRow>
+        )}
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Notes (optional)"
-        value={notes}
-        onChangeText={setNotes}
-      />
+      <View style={{ gap: 8 }}>
+        <Text variant="captionStrong" tone="secondary">
+          Account
+        </Text>
+        <ChipRow bleed={space.xl}>
+          {accounts.map((a) => (
+            <Chip key={a.id} label={a.name} selected={accountId === a.id} onPress={() => setAccountId(a.id)} />
+          ))}
+        </ChipRow>
+      </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      <TextField label="Notes" placeholder="Optional" value={notes} onChangeText={setNotes} />
 
-      <Pressable
-        style={[styles.submit, isSubmitting && styles.submitDisabled]}
-        onPress={handleSubmit}
-        disabled={isSubmitting}
-      >
-        <Text style={styles.submitText}>{isSubmitting ? "Saving…" : "Save transaction"}</Text>
-      </Pressable>
+      {error ? <InlineError message={error} /> : null}
+
+      <Button label={isSubmitting ? "Saving…" : "Save transaction"} loading={isSubmitting} onPress={handleSubmit} fullWidth size="lg" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 10, paddingVertical: 12 },
-  title: { fontSize: 15, fontWeight: "600" },
-  label: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  typeRow: { flexDirection: "row", gap: 8 },
-  typeChip: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  typeChipActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  typeChipText: { fontSize: 13, color: "#374151" },
-  typeChipTextActive: { color: "#ffffff", fontWeight: "600" },
-  chipScroll: { flexGrow: 0 },
-  chip: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-  },
-  chipActive: { backgroundColor: "#2563eb", borderColor: "#2563eb" },
-  chipText: { fontSize: 12, color: "#374151" },
-  chipTextActive: { color: "#ffffff", fontWeight: "600" },
-  error: { color: "#dc2626", fontSize: 13 },
-  submit: { backgroundColor: "#2563eb", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
-  submitDisabled: { opacity: 0.6 },
-  submitText: { color: "#ffffff", fontWeight: "600", fontSize: 14 },
-});

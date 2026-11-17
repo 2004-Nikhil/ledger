@@ -1,6 +1,7 @@
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { Account } from "@/features/accounts/types";
-import { formatCurrency } from "@/utils/currency";
+import { Divider, EmptyState, GlassCard, MoneyText, SkeletonRows, Text, colors, space, useMetrics } from "@/ui";
 
 const TYPE_LABEL: Record<Account["type"], string> = {
   cash: "Cash",
@@ -8,53 +9,113 @@ const TYPE_LABEL: Record<Account["type"], string> = {
   bank: "Bank",
 };
 
+const TYPE_ICON = {
+  cash: "cash-outline",
+  card: "card-outline",
+  bank: "business-outline",
+} as const;
+
 type Props = {
   accounts: Account[];
   netWorth: number;
+  loading?: boolean;
+  onAddAccount?: () => void;
 };
 
-export function AccountList({ accounts, netWorth }: Props) {
-  return (
-    <View style={styles.container}>
-      <View style={styles.netWorthCard}>
-        <Text style={styles.netWorthLabel}>Net worth</Text>
-        <Text style={styles.netWorthValue}>{formatCurrency(netWorth)}</Text>
-      </View>
+export function AccountList({ accounts, netWorth, loading = false, onAddAccount }: Props) {
+  const { columns } = useMetrics();
 
-      <FlatList
-        data={accounts}
-        scrollEnabled={false}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No accounts yet — add your first one below.</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.type}>{TYPE_LABEL[item.type]}</Text>
+  return (
+    <View style={{ gap: space.xl }}>
+      <GlassCard variant="solid" glow="blue" glowCorner="tr" padding={space.xl} style={{ gap: space.sm }}>
+        <Text variant="caption" tone="secondary">
+          Total balance
+        </Text>
+        <MoneyText amount={netWorth} size="display" animate tone={netWorth < 0 ? "negative" : "primary"} />
+        <Text variant="caption" tone="secondary">
+          {accounts.length === 1 ? "Across 1 account" : `Across ${accounts.length} accounts`}
+        </Text>
+      </GlassCard>
+
+      {loading && accounts.length === 0 ? (
+        <SkeletonRows count={3} />
+      ) : accounts.length === 0 ? (
+        <EmptyState
+          icon="wallet-outline"
+          title="No accounts yet"
+          message="Add your first account to start tracking balances."
+          actionLabel={onAddAccount ? "Add account" : undefined}
+          onAction={onAddAccount}
+        />
+      ) : columns === 2 ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>
+          {accounts.map((a) => (
+            <GlassCard key={a.id} padding={space.lg} style={{ width: "48.5%" }}>
+              <AccountRow account={a} stacked />
+            </GlassCard>
+          ))}
+        </View>
+      ) : (
+        <GlassCard style={{ paddingHorizontal: space.lg }}>
+          {accounts.map((a, i) => (
+            <View key={a.id}>
+              {i > 0 && <Divider inset={56} />}
+              <AccountRow account={a} />
             </View>
-            <Text style={styles.balance}>{formatCurrency(item.currentBalance)}</Text>
-          </View>
-        )}
-      />
+          ))}
+        </GlassCard>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  netWorthCard: { backgroundColor: "#f0fdf4", borderRadius: 12, padding: 16, gap: 4 },
-  netWorthLabel: { fontSize: 13, color: "#166534" },
-  netWorthValue: { fontSize: 26, fontWeight: "700", color: "#166534" },
-  empty: { color: "#6b7280", fontSize: 13, paddingVertical: 12 },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#e5e7eb",
-  },
-  name: { fontSize: 15, fontWeight: "600" },
-  type: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  balance: { fontSize: 15, fontWeight: "600" },
-});
+function AccountRow({ account, stacked = false }: { account: Account; stacked?: boolean }) {
+  const icon = (
+    <View
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.glass,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}
+    >
+      <Ionicons name={TYPE_ICON[account.type]} size={19} color={colors.accentText} />
+    </View>
+  );
+  const title = (
+    <View style={{ flex: stacked ? undefined : 1, gap: 2 }}>
+      <Text variant="bodyStrong" numberOfLines={1}>
+        {account.name}
+      </Text>
+      <Text variant="caption" tone="secondary">
+        {TYPE_LABEL[account.type]}
+      </Text>
+    </View>
+  );
+  const balance = (
+    <MoneyText amount={account.currentBalance} size="figureSm" tone={account.currentBalance < 0 ? "negative" : "primary"} align={stacked ? "left" : "right"} style={stacked ? undefined : { maxWidth: 150 }} />
+  );
+
+  if (stacked) {
+    return (
+      <View style={{ gap: space.md }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+          {icon}
+          {title}
+        </View>
+        {balance}
+      </View>
+    );
+  }
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: 14 }}>
+      {icon}
+      {title}
+      {balance}
+    </View>
+  );
+}
